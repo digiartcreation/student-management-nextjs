@@ -1,0 +1,275 @@
+<div class="login-page">
+
+  <!-- ── FOTA TECH BACKGROUND (image-1 style) ───────────────── -->
+  <div class="bg-scene">
+    <svg viewBox="0 0 1440 900" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+
+      <!-- faint world-map dot grid -->
+      <g fill="#3b82f6" opacity="0.10">
+        @for (d of mapDots; track $index) {
+          <circle [attr.cx]="d.x" [attr.cy]="d.y" r="2"/>
+        }
+      </g>
+
+      <!-- particle field -->
+      <g fill="#60a5fa">
+        <circle cx="120" cy="80"  r="2"   opacity="0.5"/>
+        <circle cx="400" cy="50"  r="1.5" opacity="0.4"/>
+        <circle cx="900" cy="70"  r="2"   opacity="0.45"/>
+        <circle cx="1320" cy="60" r="1.5" opacity="0.4"/>
+        <circle cx="80"  cy="500" r="2"   opacity="0.4"/>
+        <circle cx="1380" cy="450" r="2"  opacity="0.45"/>
+        <circle cx="200" cy="820" r="1.5" opacity="0.4"/>
+        <circle cx="760" cy="850" r="2"   opacity="0.4"/>
+        <circle cx="1200" cy="840" r="1.5" opacity="0.45"/>
+        <circle cx="520" cy="120" r="1.5" opacity="0.35"/>
+        <circle cx="1050" cy="180" r="1.5" opacity="0.35"/>
+      </g>
+
+      <!-- ── TOP-LEFT: UPLOAD PROGRESS RING (flashes on packet arrival) ── -->
+      <g transform="translate(210,195)">
+        <g>
+          <animateTransform attributeName="transform" type="scale" values="1;1.1;1" keyTimes="0;0.1;0.3" dur="1.8s" begin="1.8s" repeatCount="indefinite"/>
+          <circle r="58" fill="#0b1220" stroke="#1e3a8a" stroke-width="1" opacity="0.5">
+            <animate attributeName="stroke" values="#1e3a8a;#7dd3fc;#1e3a8a;#1e3a8a" keyTimes="0;0.1;0.35;1" dur="1.8s" begin="1.8s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;0.95;0.5;0.5" keyTimes="0;0.1;0.35;1" dur="1.8s" begin="1.8s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+        <circle r="46" fill="none" stroke="#1e293b" stroke-width="6"/>
+        <circle r="46" fill="none" stroke="#38bdf8" stroke-width="6" stroke-linecap="round"
+                [attr.stroke-dasharray]="(uploadPercent() / 100 * ringCircumference) + ' ' + ringCircumference"
+                transform="rotate(-90)"/>
+        <text y="-2" text-anchor="middle" fill="#e0f2fe" font-size="22" font-weight="700" font-family="system-ui">{{ uploadPercent() }}%</text>
+        <text y="16" text-anchor="middle" fill="#7dd3fc" font-size="9" letter-spacing="2" font-family="system-ui">UPDATE</text>
+        <path d="M-7 30 L0 22 L7 30" fill="none" stroke="#38bdf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="0" y1="22" x2="0" y2="36" stroke="#38bdf8" stroke-width="2.4" stroke-linecap="round"/>
+      </g>
+
+      <!-- ── TOP-RIGHT: CLOUD CONNECTED (flashes on packet arrival) ── -->
+      <g transform="translate(1235,185)">
+        <g>
+          <animateTransform attributeName="transform" type="scale" values="1;1.12;1" keyTimes="0;0.1;0.3" dur="2.6s" begin="3.8s" repeatCount="indefinite"/>
+          <path d="M-26 8 Q-30 -4 -18 -8 Q-12 -22 4 -18 Q14 -26 24 -14 Q38 -14 36 2 Q44 4 40 14 Z"
+                fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linejoin="round">
+            <animate attributeName="stroke" values="#38bdf8;#e0f2fe;#38bdf8;#38bdf8" keyTimes="0;0.1;0.35;1" dur="2.6s" begin="3.8s" repeatCount="indefinite"/>
+          </path>
+        </g>
+        <line x1="6" y1="-2" x2="6" y2="-18" stroke="#7dd3fc" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M-1 -10 L6 -18 L13 -10" fill="none" stroke="#7dd3fc" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text y="36" text-anchor="middle" fill="#7dd3fc" font-size="10" letter-spacing="2.5" font-family="system-ui">CLOUD CONNECTED</text>
+      </g>
+
+      <!-- ── CENTER-LEFT: FOTA UPDATE CHIP ON CIRCUIT BOARD ── -->
+      <g transform="translate(250,580)">
+        <!-- circuit traces -->
+        <g stroke="#1d4ed8" stroke-width="1.4" fill="none" opacity="0.7">
+          <path d="M-70 0 H-118"/><circle cx="-118" cy="0" r="3" fill="#1d4ed8"/>
+          <path d="M70 0 H118"/><circle cx="118" cy="0" r="3" fill="#1d4ed8"/>
+          <path d="M-70 -26 H-100 V-70"/><circle cx="-100" cy="-70" r="3" fill="#1d4ed8"/>
+          <path d="M70 26 H104 V72"/><circle cx="104" cy="72" r="3" fill="#1d4ed8"/>
+          <path d="M-40 70 V104"/><circle cx="-40" cy="104" r="3" fill="#1d4ed8"/>
+          <path d="M40 -70 V-104"/><circle cx="40" cy="-104" r="3" fill="#1d4ed8"/>
+        </g>
+        <!-- chip glow -->
+        <rect x="-78" y="-58" width="156" height="116" rx="18" fill="#2563eb" opacity="0.12"/>
+        <!-- chip body -->
+        <rect x="-66" y="-46" width="132" height="92" rx="12" fill="#0c1a3a" stroke="#3b82f6" stroke-width="2"/>
+        <rect x="-50" y="-32" width="100" height="64" rx="8" fill="#13265a" stroke="#1d4ed8" stroke-width="1"/>
+        <!-- chip pins -->
+        <g fill="#3b82f6">
+          <rect x="-60" y="-52" width="10" height="6" rx="1"/><rect x="-30" y="-52" width="10" height="6" rx="1"/>
+          <rect x="0" y="-52" width="10" height="6" rx="1"/><rect x="30" y="-52" width="10" height="6" rx="1"/>
+          <rect x="-60" y="46" width="10" height="6" rx="1"/><rect x="-30" y="46" width="10" height="6" rx="1"/>
+          <rect x="0" y="46" width="10" height="6" rx="1"/><rect x="30" y="46" width="10" height="6" rx="1"/>
+        </g>
+        <text y="-2" text-anchor="middle" fill="#bfdbfe" font-size="20" font-weight="800" letter-spacing="1" font-family="system-ui">FOTA</text>
+        <text y="20" text-anchor="middle" fill="#60a5fa" font-size="10" letter-spacing="4" font-family="system-ui">UPDATE</text>
+      </g>
+
+      <!-- ── RIGHT: CODE TERMINAL (frame flashes on packet arrival) ── -->
+      <g transform="translate(1010,420)">
+        <g>
+          <animateTransform attributeName="transform" type="scale" values="1;1.03;1" keyTimes="0;0.1;0.3" dur="2.4s" begin="2.8s" repeatCount="indefinite"/>
+          <rect x="0" y="0" width="240" height="150" rx="12" fill="#0a1326" stroke="#1e3a8a" stroke-width="1.4" opacity="0.92">
+            <animate attributeName="stroke" values="#1e3a8a;#7dd3fc;#1e3a8a;#1e3a8a" keyTimes="0;0.1;0.35;1" dur="2.4s" begin="2.8s" repeatCount="indefinite"/>
+          </rect>
+          <rect x="0" y="0" width="240" height="28" rx="12" fill="#0f1d3d"/>
+          <circle cx="18" cy="14" r="4" fill="#ef4444"/><circle cx="34" cy="14" r="4" fill="#f59e0b"/><circle cx="50" cy="14" r="4" fill="#22c55e"/>
+          <text x="120" y="18" text-anchor="middle" fill="#64748b" font-size="9" font-family="monospace">fota — deploy</text>
+        </g>
+        <g font-family="monospace" font-size="10.5" fill="#4ade80">
+          @for (line of terminalLines; track $index) {
+            @if ($index < visibleTerminalLines()) {
+              <text x="16" [attr.y]="52 + $index * 22" class="term-line"
+                [attr.fill]="$index === terminalLines.length - 1 ? '#7dd3fc' : '#4ade80'">{{ line }}</text>
+            }
+          }
+          @if (visibleTerminalLines() > 0 && visibleTerminalLines() < terminalLines.length) {
+            <rect [attr.x]="16 + terminalLines[visibleTerminalLines() - 1].length * 6.35"
+                  [attr.y]="52 + (visibleTerminalLines() - 1) * 22 - 9" width="6" height="12" fill="#4ade80" class="term-cursor"/>
+          }
+        </g>
+      </g>
+
+      <!-- ── BOTTOM-RIGHT: DEVICE PROTECTED SHIELD (blinks on packet arrival) ── -->
+      <g transform="translate(1235,680)">
+        <g>
+          <animateTransform attributeName="transform" type="scale" values="1;1.15;1" keyTimes="0;0.08;0.3" dur="2.2s" begin="3s" repeatCount="indefinite"/>
+          <circle r="50" fill="#0b1220" stroke="#1e3a8a" stroke-width="1" opacity="0.5">
+            <animate attributeName="stroke" values="#1e3a8a;#7dd3fc;#1e3a8a;#1e3a8a" keyTimes="0;0.08;0.3;1" dur="2.2s" begin="3s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.5;1;0.5;0.5" keyTimes="0;0.08;0.3;1" dur="2.2s" begin="3s" repeatCount="indefinite"/>
+          </circle>
+          <path d="M0 -28 L22 -18 V2 Q22 22 0 32 Q-22 22 -22 2 V-18 Z"
+                fill="#0c1a3a" stroke="#38bdf8" stroke-width="2.2" stroke-linejoin="round">
+            <animate attributeName="stroke" values="#38bdf8;#e0f2fe;#38bdf8;#38bdf8" keyTimes="0;0.08;0.3;1" dur="2.2s" begin="3s" repeatCount="indefinite"/>
+          </path>
+          <path d="M-9 0 L-2 8 L11 -7" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        <text y="60" text-anchor="middle" fill="#7dd3fc" font-size="10" letter-spacing="2.5" font-family="system-ui">DEVICE PROTECTED</text>
+      </g>
+
+      <!-- connection lines — anchored exactly to the chip's pin dots and to
+           each destination icon's outer edge, so the wires read as properly
+           plugged in rather than floating near the artwork. Dashes continuously "flow". -->
+      <g stroke="#2563eb" stroke-width="1" stroke-dasharray="7 7" opacity="0.35" fill="none">
+        <!-- chip top-left pin (150,510) → ring bottom edge (210,253) -->
+        <line x1="150" y1="510" x2="210" y2="253">
+          <animate attributeName="stroke-dashoffset" values="14;0" dur="0.7s" repeatCount="indefinite"/>
+        </line>
+        <!-- chip right pin (368,580) → terminal left edge, vertical middle (1010,495) -->
+        <line x1="368" y1="580" x2="1010" y2="495">
+          <animate attributeName="stroke-dashoffset" values="14;0" dur="0.9s" repeatCount="indefinite"/>
+        </line>
+        <!-- chip bottom-right pin (354,652) → shield left edge (1185,680) -->
+        <line x1="354" y1="652" x2="1185" y2="680">
+          <animate attributeName="stroke-dashoffset" values="14;0" dur="0.8s" repeatCount="indefinite"/>
+        </line>
+        <!-- chip top-right pin (290,476) → cloud bottom edge (1211,207) -->
+        <line x1="290" y1="476" x2="1211" y2="207">
+          <animate attributeName="stroke-dashoffset" values="14;0" dur="1s" repeatCount="indefinite"/>
+        </line>
+      </g>
+
+      <!-- traveling data-packet pulses — travel the exact same paths as the
+           lines above, one per connection, looping forever. Each destination
+           node's flash animation is timed to begin at this pulse's begin + dur,
+           so the impact reads as cause/effect. -->
+      <g fill="#7dd3fc">
+        <circle r="3.2">
+          <animate attributeName="cx" values="150;210" dur="1.8s" repeatCount="indefinite"/>
+          <animate attributeName="cy" values="510;253" dur="1.8s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.12;0.9;1" dur="1.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="3.2">
+          <animate attributeName="cx" values="368;1010" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+          <animate attributeName="cy" values="580;495" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.12;0.9;1" dur="2.4s" begin="0.4s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="3.2">
+          <animate attributeName="cx" values="354;1185" dur="2.2s" begin="0.8s" repeatCount="indefinite"/>
+          <animate attributeName="cy" values="652;680" dur="2.2s" begin="0.8s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.12;0.9;1" dur="2.2s" begin="0.8s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="3.2">
+          <animate attributeName="cx" values="290;1211" dur="2.6s" begin="1.2s" repeatCount="indefinite"/>
+          <animate attributeName="cy" values="476;207" dur="2.6s" begin="1.2s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.12;0.9;1" dur="2.6s" begin="1.2s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </svg>
+  </div>
+
+  <!-- ── LOGIN CARD ─────────────────────────────────────────── -->
+  <div class="card-wrap">
+    <div class="login-card">
+
+      <!-- Brand row: icon + wordmark form one combined FOTA logo lockup -->
+      <div class="card-brand">
+        <div class="brand-icon">
+          <!-- Custom FOTA mark: a firmware push (arrow) lands on a chip while
+               OTA broadcast waves radiate from the corner — reads as one
+               glyph, not a stock icon. -->
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="white" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke-width="1.4" opacity="0.55" d="M15.2 3.3a7.2 7.2 0 014.6 4.6"/>
+            <path stroke-width="1.4" opacity="0.8" d="M14.3 5.9a4.1 4.1 0 012.9 2.9"/>
+            <rect x="5" y="9.5" width="14" height="11" rx="2.2" stroke-width="1.7"/>
+            <rect x="8.4" y="12.9" width="7.2" height="4.9" rx="1" stroke-width="1.5"/>
+            <path stroke-width="1.6" d="M12 9.5V6.2m0 0L9.8 8.3M12 6.2l2.2 2.1"/>
+            <path stroke-width="1.5" d="M8.4 9.5V7.7M15.6 9.5V7.7M5 13.3H2.9M5 16.7H2.9M19 13.3h2.1M19 16.7h2.1"/>
+          </svg>
+        </div>
+        <div>
+          <p class="brand-name">APM<span> Kingstrack</span></p>
+          <p class="brand-sub">FOTA SERVER</p>
+        </div>
+      </div>
+
+      <!-- Form header -->
+      <div class="form-header">
+        <h1 class="form-title">Welcome back</h1>
+        <p class="form-subtitle">Sign in to your management console</p>
+      </div>
+
+      <!-- Form -->
+      <form (ngSubmit)="onLogin()" class="login-form">
+
+        <div class="field-group">
+          <label class="field-label" for="username">Username</label>
+          <div class="input-wrap">
+            <svg class="input-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+            </svg>
+            <input id="username" type="text" [(ngModel)]="username" name="username"
+                   class="text-input" placeholder="Enter your username" autocomplete="username"/>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="password">Password</label>
+          <div class="input-wrap">
+            <svg class="input-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+            </svg>
+            <input id="password" [type]="showPass() ? 'text' : 'password'" [(ngModel)]="password" name="password"
+                   class="text-input" placeholder="Enter your password" autocomplete="current-password"/>
+            <button type="button" class="pass-toggle" (click)="showPass.set(!showPass())">
+              @if (showPass()) {
+                <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+                </svg>
+              } @else {
+                <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+
+      
+
+        <button type="submit" class="submit-btn" [disabled]="loading()">
+          @if (loading()) {
+            <svg class="spin-icon" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="white" stroke-width="4" opacity="0.25"/>
+              <path fill="white" opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            Signing in…
+          } @else {
+            Sign In
+            <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+            </svg>
+          }
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+</div>

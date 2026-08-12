@@ -1,0 +1,42 @@
+/* ng-select overrides — ::ng-deep needed because ng-select renders outside Angular's scoped shadow; not expressible via Tailwind utilities */
+:host ::ng-deep .form-field .ng-select .ng-select-container {
+  min-height: 38px;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: .5rem;
+  background: #f9fafb;
+  font-size: .875rem;
+  color: #374151;
+  cursor: pointer;
+}
+:host ::ng-deep .form-field .ng-select.ng-select-focused .ng-select-container {
+  border-color: #4f46e5;
+  box-shadow: none;
+  background: white;
+}
+:host ::ng-deep .form-field .ng-select .ng-placeholder {
+  color: #9ca3af;
+  font-size: .875rem;
+}
+:host ::ng-deep .form-field .ng-select .ng-value-label {
+  font-size: .875rem;
+  color: #374151;
+}
+:host ::ng-deep .form-field .ng-select .ng-arrow-wrapper {
+  padding-right: .5rem;
+}
+:host ::ng-deep .form-field .ng-dropdown-panel {
+  border: 1px solid #d1d5db;
+  border-radius: .5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  font-size: .875rem;
+  z-index: 9999;
+}
+:host ::ng-deep .form-field .ng-option.ng-option-marked {
+  background: #ede9fe;
+  color: #4f46e5;
+}
+:host ::ng-deep .form-field .ng-option.ng-option-selected {
+  background: #4f46e5;
+  color: white;
+}

@@ -1,0 +1,152 @@
+<div class="flex h-screen overflow-hidden bg-[#edf0f8]">
+  @if (sidebarOpen()) {
+    <div class="fixed inset-0 z-40 bg-black/55" (click)="sidebarOpen.set(false)"></div>
+  }
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────── -->
+  <aside
+    class="flex w-60 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#1e1b4b] to-[#0f0e2e] fixed top-0 bottom-0 left-0 z-50 transition-[transform,width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:relative lg:top-auto lg:bottom-auto lg:left-auto"
+    [ngClass]="{
+      'translate-x-0': sidebarOpen(),
+      '-translate-x-full lg:translate-x-0': !sidebarOpen(),
+      'lg:w-[76px]': sidebarCollapsed()
+    }">
+
+    <!-- Brand -->
+    <div class="flex shrink-0 items-center gap-2.5 border-b border-white/[.07] px-[1.1rem] pt-5 pb-4"
+         [ngClass]="{ 'justify-center': sidebarCollapsed() }">
+      <span class="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-indigo-600 text-white shadow-[0_3px_10px_rgba(79,70,229,0.4)]">
+        <!-- Custom FOTA mark: a firmware push (arrow) lands on a chip while
+             OTA broadcast waves radiate from the corner — reads as one
+             glyph, not a stock icon. Matches the login page and favicon. -->
+        <svg class="h-[19px] w-[19px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke-width="1.4" opacity="0.55" d="M15.2 3.3a7.2 7.2 0 014.6 4.6"/>
+          <path stroke-width="1.4" opacity="0.8" d="M14.3 5.9a4.1 4.1 0 012.9 2.9"/>
+          <rect x="5" y="9.5" width="14" height="11" rx="2.2" stroke-width="1.7"/>
+          <rect x="8.4" y="12.9" width="7.2" height="4.9" rx="1" stroke-width="1.5"/>
+          <path stroke-width="1.6" d="M12 9.5V6.2m0 0L9.8 8.3M12 6.2l2.2 2.1"/>
+          <path stroke-width="1.5" d="M8.4 9.5V7.7M15.6 9.5V7.7M5 13.3H2.9M5 16.7H2.9M19 13.3h2.1M19 16.7h2.1"/>
+        </svg>
+      </span>
+      @if (!sidebarCollapsed()) {
+        <span class="min-w-0 flex-1 truncate leading-tight">
+          <span class="block text-base font-bold tracking-wide text-[#dde4f8]">
+            APM<em class="not-italic text-indigo-300"> Kingstrack</em>
+          </span>
+          <span class="block text-[0.6rem] font-semibold tracking-[0.12em] text-indigo-300/50">FOTA SERVER</span>
+        </span>
+        <button
+          class="hidden shrink-0 h-6 w-6 items-center justify-center rounded-md bg-white/[.08] text-indigo-200/80 transition hover:bg-white/[.16] hover:text-indigo-200 lg:flex cursor-pointer"
+          (click)="toggleCollapse()"
+          title="Collapse sidebar">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+      } @else {
+        <button
+          class="hidden shrink-0 h-6 w-6 items-center justify-center rounded-md bg-white/[.08] text-indigo-200/80 transition hover:bg-white/[.16] hover:text-indigo-200 lg:flex cursor-pointer"
+          (click)="toggleCollapse()"
+          title="Expand sidebar">
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </button>
+      }
+    </div>
+
+    <!-- User Profile -->
+    <div class="flex shrink-0 items-center gap-3 border-b border-indigo-500/[.12] bg-black/20 px-[1.1rem] py-[1.125rem]"
+         [ngClass]="{ 'justify-center': sidebarCollapsed() }">
+      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-indigo-300/30 bg-gradient-to-br from-indigo-500 to-indigo-950 text-base font-bold text-white">
+        {{ userInitial() }}
+      </div>
+      @if (!sidebarCollapsed()) {
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-xs font-bold tracking-wider text-[#e8e8fb] uppercase">{{ auth.currentUser()?.username }}</div>
+          <div class="mt-0.5 text-[0.68rem] text-indigo-300/60 capitalize">{{ auth.currentUser()?.role }}</div>
+        </div>
+      }
+    </div>
+
+    <!-- Navigation -->
+    <nav class="flex flex-1 flex-col gap-px overflow-y-auto px-3 py-2.5">
+      @for (item of navItems(); track item.path) {
+        <a
+          class="flex items-center gap-2.5 rounded-[0.55rem] px-3.5 py-2.5 text-[0.775rem] font-medium tracking-wide text-indigo-200/65 no-underline transition hover:bg-white/[.06] hover:text-indigo-100"
+          [ngClass]="sidebarCollapsed() ? 'justify-center px-2.5' : ''"
+          [routerLink]="item.path"
+          routerLinkActive="!bg-indigo-500/[.18] !text-indigo-400"
+          [routerLinkActiveOptions]="{exact: item.exact ?? false}"
+          [title]="sidebarCollapsed() ? item.label : ''"
+          (click)="sidebarOpen.set(false)">
+          <svg class="h-[17px] w-[17px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="item.icon"/>
+          </svg>
+          @if (!sidebarCollapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- Footer -->
+    <div class="flex shrink-0 flex-col gap-2.5 border-t border-white/[.07] px-[1.1rem] py-[0.875rem]">
+      <!-- <div class="flex items-center gap-[0.45rem]" [ngClass]="{ 'justify-center': sidebarCollapsed() }">
+        <span class="h-[7px] w-[7px] shrink-0 rounded-full"
+          [ngClass]="wsConnected() ? 'bg-green-400' : 'bg-amber-500 animate-pulse'"></span>
+        @if (!sidebarCollapsed()) {
+          <span class="text-[0.68rem] text-indigo-300/50">{{ wsConnected() ? 'Live updates active' : 'Connecting...' }}</span>
+        }
+      </div> -->
+      <button
+        class="flex items-center gap-[0.45rem] border-none bg-transparent py-1 text-[0.72rem] text-indigo-300/50 transition hover:text-red-300 cursor-pointer"
+        [ngClass]="{ 'justify-center': sidebarCollapsed() }"
+        (click)="confirmLogout()"
+        [title]="sidebarCollapsed() ? 'Sign out' : ''">
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+        @if (!sidebarCollapsed()) {
+          <span>Sign out</span>
+        }
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN AREA ────────────────────────────────────────────── -->
+  <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
+    <button
+      class="fixed top-3 left-3 z-45 flex h-9 w-9 items-center justify-center rounded-md bg-white text-gray-500 shadow-[0_1px_4px_rgba(0,0,0,0.15)] transition hover:bg-gray-100 lg:hidden"
+      (click)="sidebarOpen.set(true)">
+      <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <main class="flex-1 overflow-y-auto overflow-x-hidden bg-[#f0f2f9] p-[1.2rem] pt-16 lg:pt-[1.2rem]">
+      <router-outlet/>
+    </main>
+  </div>
+</div>
+
+<!-- Sign Out Confirm Modal -->
+@if (showLogoutConfirm()) {
+  <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 p-4" (click)="cancelLogout()">
+    <div class="flex w-full max-w-[380px] flex-col items-center px-6 pt-7 pb-6 text-center rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
+      <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
+        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      </div>
+      <p class="m-0 text-[1.05rem] font-bold text-gray-900">Are you sure?</p>
+      <p class="mt-1.5 text-[0.85rem] text-gray-500">Do you really want to sign out?</p>
+      <div class="mt-5 flex justify-center gap-3">
+        <button type="button" class="rounded-lg bg-red-500 px-7 py-[0.55rem] text-sm font-bold text-white transition-colors hover:bg-red-600 cursor-pointer" (click)="logout()">Yes</button>
+        <button type="button" class="rounded-lg bg-gray-200 px-7 py-[0.55rem] text-sm font-bold text-gray-700 transition-colors hover:bg-gray-300 cursor-pointer" (click)="cancelLogout()">No</button>
+      </div>
+    </div>
+  </div>
+}

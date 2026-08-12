@@ -1,0 +1,156 @@
+  @import "tailwindcss";
+  @import "@ng-select/ng-select/themes/default.theme.css";
+  /* AG Grid v36 uses the Theming API (themeQuartz via GridThemeService).
+    Do NOT import legacy theme CSS here — it conflicts with [theme] (error #239). */
+  /* Tailwind v4: scan Angular component templates and TypeScript for class names */
+  @source "./app/**/*.{html,ts}";
+  @source "./src/app/**/*.{html,ts}";
+
+  @layer base {
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; overflow-x: hidden;    overflow-y: hidden; }
+    body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #0f172a; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a5b4fc; }
+  }
+
+  /* AG Grid theming is handled by GridThemeService (themeQuartz Theming API),
+    bound per-grid via [theme]. Light/dark is switched there, not in CSS. */
+
+  /* Tailwind preflight strips native input/select chrome, which otherwise leaves
+    AG Grid's pagination page-number field and page-size dropdown looking blank. */
+  .ag-paging-number .ag-input-field-input,
+  .ag-paging-page-size select {
+    border: none;
+    border-radius: 4px;
+    background: var(--ag-background-color, #fff);
+    padding: 2px 6px;
+  }
+
+  /* Centers a column's header label — pair with a centered flex cellRenderer for full alignment. */
+  .text-center-header .ag-header-cell-label {
+    justify-content: center;
+  }
+
+  /* Row-action icon buttons (edit/delete) used in AG Grid cellRenderers. */
+  .row-action-btn:hover { transform: translateY(-1px); }
+  .row-action-btn:active { transform: translateY(0); }
+  .row-action-btn.edit:hover { background: #e0e7ff; }
+  .row-action-btn.delete:hover { background: #fee2e2; }
+
+  /* Date-range ng-select (Dashboard, Reports) — global because it uses
+     [appendTo]="'body'" so its dropdown panel is portalled to <body>,
+     outside any component's scoped ::ng-deep reach. Container styling is
+     kept here too (rather than per-component) so every page using this
+     control looks identical. */
+  .date-range-select .ng-select-container,
+  .date-range-select.ng-select-opened > .ng-select-container {
+    min-height: 38px;
+    height: 38px;
+    border: 1px solid #d1d5db;
+    border-radius: .5rem;
+    background: #f9fafb;
+    font-size: .875rem;
+    color: #374151;
+    cursor: pointer;
+  }
+  /* The theme's own opened+bottom/top rules zero out the radius on the side
+     facing the (normally flush-merged) panel — override with matching
+     specificity so our detached, fully-rounded look survives when open. */
+  .date-range-select.ng-select-opened.ng-select-bottom > .ng-select-container,
+  .date-range-select.ng-select-opened.ng-select-top > .ng-select-container {
+    border-radius: .5rem !important;
+  }
+  /* ng-select's base styles give the opened container z-index:1001, which
+     floats it above the mobile sidebar drawer (z-50) and backdrop (z-40).
+     30 keeps it above page content but under the sidebar. !important is
+     required: ng-select's component styles (ViewEncapsulation.None) are
+     injected into <head> by Angular at runtime, AFTER this stylesheet
+     loads — so on equal specificity they'd win by injection order alone. */
+  .date-range-select.ng-select-opened .ng-select-container {
+    z-index: 30 !important;
+  }
+  .date-range-select.ng-select-focused .ng-select-container {
+    border-color: #4f46e5;
+    box-shadow: none;
+    background: white;
+  }
+  .date-range-select .ng-placeholder {
+    color: #9ca3af;
+    font-size: .875rem;
+  }
+  .date-range-select .ng-value-label {
+    font-size: .875rem;
+    color: #374151;
+  }
+  .date-range-select .ng-arrow-wrapper {
+    padding-right: .5rem;
+  }
+
+  /* Detaches the panel visually from the select box (gap + full corner
+     radius) instead of the default theme's flush-merge look, which read
+     as a "square" top edge. z-index overrides the theme's default 1050 —
+     the mobile sidebar drawer + its backdrop sit at z-50/z-40 (see
+     shell.component.html), so 1050 let the panel float above the sidebar
+     when both happened to be open. 45 keeps it above ordinary page
+     content but still behind the sidebar drawer and its backdrop. */
+  .date-range-select.ng-dropdown-panel {
+    margin-top: 6px;
+    border: 1px solid #d1d5db;
+    border-radius: .5rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    font-size: .875rem;
+    overflow: hidden;
+    z-index: 45 !important;
+  }
+  .date-range-select.ng-dropdown-panel.ng-select-bottom {
+    top: 100%;
+    border-top-color: #d1d5db;
+    margin-top: 6px;
+  }
+  .date-range-select.ng-dropdown-panel .ng-option {
+    background: #fff;
+  }
+  .date-range-select.ng-dropdown-panel .ng-option.ng-option-marked {
+    background: #ede9fe;
+    color: #4f46e5;
+  }
+  .date-range-select.ng-dropdown-panel .ng-option.ng-option-selected,
+  .date-range-select.ng-dropdown-panel .ng-option.ng-option-selected.ng-option-marked {
+    background: #4f46e5;
+    color: white;
+  }
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 8px 16px;
+  min-height: 34px;
+
+  border-radius: 9999px;
+
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: .03em;
+
+  white-space: nowrap;
+}
+  .status-online   { background: #dcfce7; color: #166534; }
+  .status-offline  { background: #f1f5f9; color: #475569; }
+  .status-updating { background: #dbeafe; color: #1e40af; }
+  .status-error    { background: #fee2e2; color: #991b1b; }
+  .status-pending  { background: #fef3c7; color: #92400e; }
+  .status-success  { background: #dcfce7; color: #166534; }
+  .status-failed   { background: #fee2e2; color: #991b1b; }
+  .status-cancelled{ background: #f1f5f9; color: #475569; }
+  .status-in_progress { background: #dbeafe; color: #1e40af; }
+  .status-disconnected { background: #fee2e2; color: #991b1b; }
+  .status-draft    { background: #fef3c7; color: #92400e; }
+  .status-published{ background: #dcfce7; color: #166534; }
+  .status-deprecated{ background: #f1f5f9; color: #475569; }
