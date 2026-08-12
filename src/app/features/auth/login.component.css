@@ -36,41 +36,6 @@
   z-index: 0;
 }
 
-/* ── Education-themed background illustration ─────────────────────────
-   One-time entrance on load — not a continuous/looping animation. */
-.bg-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  overflow: hidden;
-}
-.bg-scene svg {
-  width: 100%;
-  height: 100%;
-  animation: bg-scene-in 1.1s ease-out both;
-}
-@keyframes bg-scene-in {
-  from { opacity: 0; transform: scale(0.97); }
-  to   { opacity: 1; transform: scale(1); }
-}
-
-/* Terminal boot lines fade/slide in as they're revealed each cycle */
-.term-line {
-  animation: term-line-in 0.35s ease-out both;
-}
-@keyframes term-line-in {
-  from { opacity: 0; transform: translateX(-4px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.term-cursor {
-  animation: term-cursor-blink 0.9s steps(1) infinite;
-}
-@keyframes term-cursor-blink {
-  0%, 49%  { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-
 /* ── Card wrapper ────────────────────────────────────────── */
 .card-wrap {
   position: relative;
@@ -352,7 +317,6 @@
    loading state, not decoration) but drop every purely decorative CSS
    animation and show elements in their final, settled state immediately. */
 @media (prefers-reduced-motion: reduce) {
-  .bg-scene svg,
   .login-card,
   .login-card::before,
   .card-brand,
@@ -360,9 +324,7 @@
   .form-header,
   .field-group,
   .submit-btn,
-  .submit-btn::after,
-  .term-line,
-  .term-cursor {
+  .submit-btn::after {
     animation: none !important;
     transition: none !important;
   }
@@ -370,8 +332,7 @@
   .card-brand,
   .form-header,
   .field-group,
-  .submit-btn,
-  .term-line {
+  .submit-btn {
     opacity: 1 !important;
     transform: none !important;
   }
