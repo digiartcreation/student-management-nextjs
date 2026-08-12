@@ -1,0 +1,254 @@
+<div class="flex flex-col gap-5">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 class="m-0 text-xl font-extrabold text-gray-900">Fees</h2>
+      <p class="mt-0.5 text-sm text-gray-500">Manage fee records and payments</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="relative inline-flex items-center">
+        <svg class="pointer-events-none absolute left-3 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" class="w-64 rounded-lg border border-gray-200 bg-white py-2 pr-4 pl-9 text-sm text-gray-700 outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-600" placeholder="Search fees…" [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+      </div>
+      <button class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white p-2 text-red-500 transition-colors hover:bg-red-50 cursor-pointer" title="Export PDF" (click)="exportPdf()">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+        </svg>
+      </button>
+      <button class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white p-2 text-green-600 transition-colors hover:bg-green-50 cursor-pointer" title="Export Excel" (click)="exportExcel()">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75V5.25a.75.75 0 01.75-.75zM3 9.75h18M3 14.25h18M9 4.5v15M15 4.5v15"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-1 rounded-xl bg-gray-100 p-1">
+    @for (tab of tabs; track tab.key) {
+      <button
+        class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer"
+        [class]="activeTab() === tab.key ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'"
+        (click)="onTabChange(tab.key)">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- AG Grid — desktop/tablet -->
+  <div #gridWrapper class="hidden overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)] md:block">
+    <ag-grid-angular
+      [theme]="gridTheme.getTheme()"
+      style="height:75vh;width:100%"
+      [rowData]="filteredFees()"
+      [columnDefs]="colDefs"
+      [defaultColDef]="defaultColDef"
+      [enableCellTextSelection]="true"
+      [rowHeight]="52"
+      [headerHeight]="44"
+      [animateRows]="true"
+      [suppressMovableColumns]="true"
+      [suppressHorizontalScroll]="true"
+      [pagination]="true"
+      [paginationPageSize]="15"
+      (gridReady)="onGridReady($event)"
+      (firstDataRendered)="onGridDataChanged()"
+      (rowDataUpdated)="onGridDataChanged()"
+    ></ag-grid-angular>
+  </div>
+
+  <!-- Cards — mobile -->
+  <div class="flex flex-col gap-3 md:hidden">
+    @for (f of pagedFees(); track f.id) {
+      <div class="rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <span class="text-sm font-bold text-gray-900">{{ f.student.name }}</span>
+            <span class="ml-2 text-xs text-gray-400">{{ f.receiptNo }}</span>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+            [class]="{
+              'bg-green-100 text-green-700': f.status === 'PAID',
+              'bg-amber-100 text-amber-700': f.status === 'PARTIAL',
+              'bg-red-100 text-red-700': f.status === 'PENDING',
+              'bg-red-200 text-red-800': f.status === 'OVERDUE'
+            }">{{ f.status }}</span>
+        </div>
+        <div class="mt-2 grid grid-cols-3 gap-1.5 text-center text-xs">
+          <div>
+            <div class="text-gray-400">Total</div>
+            <div class="mt-0.5 font-semibold text-gray-700">{{ formatCurrency(f.totalFee) }}</div>
+          </div>
+          <div>
+            <div class="text-gray-400">Paid</div>
+            <div class="mt-0.5 font-semibold text-green-600">{{ formatCurrency(f.paid) }}</div>
+          </div>
+          <div>
+            <div class="text-gray-400">Balance</div>
+            <div class="mt-0.5 font-semibold text-red-600">{{ formatCurrency(f.balance) }}</div>
+          </div>
+        </div>
+        <div class="mt-2 flex gap-2">
+          <button class="rounded-md bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 cursor-pointer" (click)="openPayment(f)">Record Payment</button>
+          <button class="rounded-md bg-green-50 px-3 py-1 text-xs font-semibold text-green-600 hover:bg-green-100 cursor-pointer" (click)="openReceipt(f)">Receipt</button>
+        </div>
+      </div>
+    } @empty {
+      <div class="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-8 text-center">
+        <p class="m-0 text-sm font-semibold text-gray-500">No fee records found</p>
+      </div>
+    }
+    <app-mobile-pagination [total]="filteredFees().length" [page]="mobilePage()" (pageChange)="mobilePage.set($event)"/>
+  </div>
+</div>
+
+<!-- ── Payment Drawer ─────────────────────────────────── -->
+@if (showPayment()) {
+  <div class="fixed inset-0 z-[100] flex items-start justify-end bg-black/40" (click)="closePayment()">
+    <div class="flex h-full w-full max-w-[440px] flex-col bg-white shadow-[-8px_0_30px_rgba(0,0,0,0.15)] animate-slide-in" (click)="$event.stopPropagation()">
+      <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
+        <h3 class="m-0 text-[1.05rem] font-bold text-gray-900">Record Payment</h3>
+        <button class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer" (click)="closePayment()">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      @if (selectedFee(); as fee) {
+        <div class="flex-1 overflow-y-auto px-6 py-5">
+          <div class="flex flex-col gap-4">
+            <!-- Student info -->
+            <div class="rounded-xl bg-indigo-50 p-4">
+              <div class="text-sm font-bold text-indigo-900">{{ fee.student.name }}</div>
+              <div class="mt-0.5 text-xs text-indigo-600">{{ fee.student.studentId }} • Class ID {{ fee.student.classId }}</div>
+            </div>
+
+            <!-- Fee summary -->
+            <div class="grid grid-cols-2 gap-3 text-sm">
+              <div class="rounded-lg bg-gray-50 p-3">
+                <div class="text-xs text-gray-400">Total Fee</div>
+                <div class="mt-0.5 font-bold text-gray-900">{{ formatCurrency(fee.totalFee) }}</div>
+              </div>
+              <div class="rounded-lg bg-gray-50 p-3">
+                <div class="text-xs text-gray-400">Already Paid</div>
+                <div class="mt-0.5 font-bold text-green-600">{{ formatCurrency(fee.paid) }}</div>
+              </div>
+              <div class="rounded-lg bg-gray-50 p-3 col-span-2">
+                <div class="text-xs text-gray-400">Remaining Balance</div>
+                <div class="mt-0.5 text-lg font-extrabold text-red-600">{{ formatCurrency(fee.balance) }}</div>
+              </div>
+            </div>
+
+            <!-- Payment fields -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Payment Amount (₹) *</label>
+              <input type="number" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="paymentAmount" [max]="fee.balance" min="1" placeholder="Enter amount"/>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold text-gray-600">Payment Date</label>
+                <input type="date" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="paymentDate"/>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-semibold text-gray-600">Payment Method</label>
+                <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="paymentMethod">
+                  <option value="Cash">Cash</option>
+                  <option value="UPI">UPI</option>
+                  <option value="Bank Transfer">Bank Transfer</option>
+                  <option value="Card">Card</option>
+                  <option value="Online">Online</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Transaction Reference</label>
+              <input type="text" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="transactionRef" placeholder="UPI/NEFT/Cheque ref"/>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Notes</label>
+              <textarea class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" rows="2" [(ngModel)]="paymentNotes" placeholder="Optional notes"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-6 py-4">
+          <button class="rounded-lg bg-gray-200 px-5 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-300 cursor-pointer" (click)="closePayment()">Cancel</button>
+          <button class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 cursor-pointer" (click)="recordPayment()">Record Payment</button>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<!-- ── Receipt Dialog ─────────────────────────────────── -->
+@if (showReceipt()) {
+  <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4" (click)="closeReceipt()">
+    <div class="w-full max-w-[480px] rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
+      @if (receiptFee(); as fee) {
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="m-0 text-lg font-bold text-gray-900">Fee Receipt</h3>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 cursor-pointer" (click)="closeReceipt()">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="border-t border-gray-100 pt-4">
+          <div class="text-center mb-4">
+            <div class="text-lg font-bold text-indigo-600">Student Fee Management</div>
+            <div class="text-xs text-gray-400">Fee Receipt</div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-y-2 text-sm mb-4">
+            <div class="text-gray-500">Receipt No</div>
+            <div class="font-semibold text-gray-900 text-right">{{ fee.receiptNo }}</div>
+            <div class="text-gray-500">Student</div>
+            <div class="font-semibold text-gray-900 text-right">{{ fee.student.name }}</div>
+            <div class="text-gray-500">Class ID</div>
+            <div class="font-semibold text-gray-900 text-right">{{ fee.student.classId }}</div>
+            <div class="text-gray-500">Year ID</div>
+            <div class="font-semibold text-gray-900 text-right">{{ fee.academicYearId }}</div>
+            <div class="text-gray-500">Fee Type ID</div>
+            <div class="font-semibold text-gray-900 text-right">{{ fee.feeTypeId }}</div>
+            <div class="text-gray-500">Due Date</div>
+            <div class="font-semibold text-gray-900 text-right">{{ fee.dueDate }}</div>
+          </div>
+
+          <div class="border-t border-gray-100 pt-3 mt-3">
+            <div class="grid grid-cols-2 gap-y-2 text-sm">
+              <div class="text-gray-500">Total Fee</div>
+              <div class="font-bold text-gray-900 text-right">{{ formatCurrency(fee.totalFee) }}</div>
+              <div class="text-gray-500">Amount Paid</div>
+              <div class="font-bold text-green-600 text-right">{{ formatCurrency(fee.paid) }}</div>
+              <div class="text-gray-500">Remaining Balance</div>
+              <div class="font-bold text-right" [class]="fee.balance > 0 ? 'text-red-600' : 'text-green-600'">{{ formatCurrency(fee.balance) }}</div>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <span class="inline-block text-xs font-semibold px-3 py-1 rounded-full"
+              [class]="{
+                'bg-green-100 text-green-700': fee.status === 'PAID',
+                'bg-amber-100 text-amber-700': fee.status === 'PARTIAL',
+                'bg-red-100 text-red-700': fee.status === 'PENDING',
+                'bg-red-200 text-red-800': fee.status === 'OVERDUE'
+              }">{{ fee.status }}</span>
+          </div>
+        </div>
+
+        <div class="mt-5 flex justify-end gap-3">
+          <button class="rounded-lg bg-gray-200 px-5 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-300 cursor-pointer" (click)="closeReceipt()">Close</button>
+        </div>
+      }
+    </div>
+  </div>
+}

@@ -22,46 +22,25 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'firmware',
+        path: 'students',
         loadComponent: () =>
-          import('./features/firmware/firmware.component').then(
-            (m) => m.FirmwareComponent,
-          ),
-      },
-
-
-      {
-        path: 'reports',
-        loadComponent: () =>
-          import('./features/reports/reports.component').then(
-            (m) => m.ReportsComponent,
+          import('./features/students/students.component').then(
+            (m) => m.StudentsComponent,
           ),
       },
       {
-        path: 'file-upload',
+        path: 'fees',
         loadComponent: () =>
-          import('./features/file-upload/file-upload').then(
-            (m) => m.FileUpload,
+          import('./features/fees/fees.component').then(
+            (m) => m.FeesComponent,
           ),
       },
       {
-        path: 'imei-status',
+        path: 'attendance',
         loadComponent: () =>
-          import('./features/imei-status/imei-status').then(
-            (m) => m.ImeiStatus,
+          import('./features/attendance/attendance.component').then(
+            (m) => m.AttendanceComponent,
           ),
-      },
-      {
-        path: 'user-management',
-        loadComponent: () =>
-          import('./features/user-management/user-management').then(
-            (m) => m.UserManagement,
-          ),
-      },
-      {
-        path: 'role',
-        loadComponent: () =>
-          import('./features/role/role').then((m) => m.Role),
       },
     ],
   },

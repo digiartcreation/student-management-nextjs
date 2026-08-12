@@ -6,9 +6,12 @@ import { API_BASE_URL } from '../../environments/environment';
 
 export interface AuthUser {
   id: number;
-  username: string;
+  name: string;
+  email: string;
   role: string;
-  menus: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LoginResult {
@@ -24,11 +27,12 @@ interface LoginApiResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly LOGGEDIN_KEY = 'fota_loggedIn';
-  private readonly ID_KEY       = 'fota_id';
-  private readonly USERNAME_KEY = 'fota_username';
-  private readonly ROLE_KEY     = 'fota_role';
-  private readonly MENUS_KEY    = 'fota_menus';
+  private readonly LOGGEDIN_KEY = 'sfm_loggedIn';
+  private readonly ID_KEY       = 'sfm_id';
+  private readonly EMAIL_KEY    = 'sfm_email';
+  private readonly NAME_KEY     = 'sfm_name';
+  private readonly ROLE_KEY     = 'sfm_role';
+  private readonly STATUS_KEY   = 'sfm_status';
 
   isLoggedIn = signal<boolean>(sessionStorage.getItem(this.LOGGEDIN_KEY) === 'true');
   currentUser = signal<AuthUser | null>(this.loadUser());
@@ -37,32 +41,36 @@ export class AuthService {
   private http = inject(HttpClient);
 
   private loadUser(): AuthUser | null {
-    const username = sessionStorage.getItem(this.USERNAME_KEY);
-    if (!username) return null;
+    const email = sessionStorage.getItem(this.EMAIL_KEY);
+    if (!email) return null;
     return {
       id: Number(sessionStorage.getItem(this.ID_KEY)),
-      username,
+      email,
+      name: sessionStorage.getItem(this.NAME_KEY) || '',
       role: sessionStorage.getItem(this.ROLE_KEY) || '',
-      menus: JSON.parse(sessionStorage.getItem(this.MENUS_KEY) || '[]'),
+      status: sessionStorage.getItem(this.STATUS_KEY) || '',
+      createdAt: '',
+      updatedAt: ''
     };
   }
 
-  login(username: string, password: string): Observable<LoginResult> {
-    if (!username?.trim() || !password?.trim()) {
-      return of({ success: false, message: 'Please enter your username and password.' });
+  login(email: string, password: string): Observable<LoginResult> {
+    if (!email?.trim() || !password?.trim()) {
+      return of({ success: false, message: 'Please enter your email and password.' });
     }
 
-    return this.http.post<LoginApiResponse>(`${API_BASE_URL}/users/login`, { username, password }).pipe(
+    return this.http.post<LoginApiResponse>(`${API_BASE_URL}/auth/login`, { email, password }).pipe(
       map((res) => {
         if (!res?.success) {
-          return { success: false, message: res?.message || 'Invalid username or password' };
+          return { success: false, message: res?.message || 'Invalid email or password' };
         }
         const user = res.data;
         sessionStorage.setItem(this.LOGGEDIN_KEY, 'true');
         sessionStorage.setItem(this.ID_KEY, String(user.id));
-        sessionStorage.setItem(this.USERNAME_KEY, user.username);
+        sessionStorage.setItem(this.EMAIL_KEY, user.email);
+        sessionStorage.setItem(this.NAME_KEY, user.name);
         sessionStorage.setItem(this.ROLE_KEY, user.role);
-        sessionStorage.setItem(this.MENUS_KEY, JSON.stringify(user.menus));
+        sessionStorage.setItem(this.STATUS_KEY, user.status);
         this.isLoggedIn.set(true);
         this.currentUser.set(user);
         return { success: true, message: res.message || 'Login successful' };
@@ -77,9 +85,10 @@ export class AuthService {
   logout(): void {
     sessionStorage.removeItem(this.LOGGEDIN_KEY);
     sessionStorage.removeItem(this.ID_KEY);
-    sessionStorage.removeItem(this.USERNAME_KEY);
+    sessionStorage.removeItem(this.EMAIL_KEY);
+    sessionStorage.removeItem(this.NAME_KEY);
     sessionStorage.removeItem(this.ROLE_KEY);
-    sessionStorage.removeItem(this.MENUS_KEY);
+    sessionStorage.removeItem(this.STATUS_KEY);
     this.isLoggedIn.set(false);
     this.currentUser.set(null);
     this.router.navigate(['/login']);

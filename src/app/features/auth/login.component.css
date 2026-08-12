@@ -36,7 +36,7 @@
   z-index: 0;
 }
 
-/* ── FOTA background illustration ─────────────────────────
+/* ── Education-themed background illustration ─────────────────────────
    One-time entrance on load — not a continuous/looping animation. */
 .bg-scene {
   position: absolute;

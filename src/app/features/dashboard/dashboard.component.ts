@@ -1,18 +1,18 @@
-import { Component, OnInit, inject, signal, computed, ElementRef, ViewChild, HostListener } from '@angular/core';
-import { NgClass, DecimalPipe, CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal, ElementRef, ViewChild, HostListener } from '@angular/core';
+import { DecimalPipe, CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { AgGridAngular } from 'ag-grid-angular';
 import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
 import { GridThemeService } from '../../service/themeing/grid-theme.service';
-import { FirmwareUpdateSummary, FirmwareUpdateSummaryPort } from '../../core/models/fota.models';
+import { ClassWisePending, DashboardSummary, MonthlyCollection, FeeStatusCount, RecentPayment } from '../../core/models/student.models';
 import { AjaxService } from '../../service/themeing/network/ajax-service.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { API_BASE_URL } from '../../environments/environment';
+import { forkJoin } from 'rxjs';
 import { ExcelExportService } from '../../service/themeing/export/excel-export.service';
 import { PdfExportService } from '../../service/themeing/export/pdf-export.service';
 
-import { DateRangeOption, DATE_RANGE_OPTIONS, computeDateRange } from '../../shared/date-range/date-range.util';
 import { MobilePagination, paginate } from '../../shared/mobile-pagination/mobile-pagination';
 import { fitColumns } from '../../shared/grid/fit-columns';
 import { getDisplayedRows } from '../../shared/grid/get-displayed-rows';
@@ -42,22 +42,17 @@ export class DashboardComponent implements OnInit {
 
   loading = signal(false);
 
-  // ── Date range filter ───────────────────────────────────────────
-  rangeOptions = DATE_RANGE_OPTIONS;
-  selectedRange = signal<DateRangeOption>('today');
-  customFrom = '';
-  customTo = '';
-
   // ── Summary KPIs ─────────────────────────────────────────────────
-  totalDevices       = signal<number>(0);
-  completedDevices   = signal<number>(0);
-  inProgressDevices  = signal<number>(0);
-  disconnectedDevices = signal<number>(0);
+  totalStudents   = signal<number>(0);
+  totalFees       = signal<number>(0);
+  totalCollected  = signal<number>(0);
+  totalPending    = signal<number>(0);
+  totalOverdue    = signal<number>(0);
 
-  // ── AG Grid: per-port breakdown ───────────────────────────────────
-  portRowData = signal<FirmwareUpdateSummaryPort[]>([]);
+  // ── AG Grid: class-wise breakdown ───────────────────────────────────
+  classRowData = signal<ClassWisePending[]>([]);
   mobilePage = signal(1);
-  pagedPorts = computed(() => paginate(this.portRowData(), this.mobilePage()));
+  pagedClasses = signal<ClassWisePending[]>([]);
 
   defaultColDef: ColDef = {
     sortable: true,
@@ -65,44 +60,39 @@ export class DashboardComponent implements OnInit {
     resizable: true,
   };
 
-  colDefs: ColDef<FirmwareUpdateSummaryPort>[] = [
-    { field: 'port', headerName: 'Port' },
-    { field: 'total', headerName: 'Total Devices' },
+  colDefs: ColDef<ClassWisePending>[] = [
+    { field: 'class', headerName: 'Class' },
+    { field: 'totalStudents', headerName: 'Students' },
     {
-      field: 'completed',
-      headerName: 'Completed',
+      field: 'totalFees',
+      headerName: 'Total Fees',
       cellRenderer: (p: any) =>
-        `<span style="color:#059669;font-weight:600">${(p.value ?? 0).toLocaleString()}</span>`,
+        `<span style="font-weight:600">₹${(p.value ?? 0).toLocaleString('en-IN')}</span>`,
     },
     {
-      field: 'inProgress',
-      headerName: 'In Progress',
+      field: 'collected',
+      headerName: 'Collected',
       cellRenderer: (p: any) =>
-        `<span style="color:#2563eb;font-weight:600">${(p.value ?? 0).toLocaleString()}</span>`,
+        `<span style="color:#059669;font-weight:600">₹${(p.value ?? 0).toLocaleString('en-IN')}</span>`,
     },
     {
-      field: 'disconnected',
-      headerName: 'Disconnected',
+      field: 'pending',
+      headerName: 'Pending',
       cellRenderer: (p: any) =>
-        `<span style="color:#dc2626;font-weight:600">${(p.value ?? 0).toLocaleString()}</span>`,
+        `<span style="color:#d97706;font-weight:600">₹${(p.value ?? 0).toLocaleString('en-IN')}</span>`,
     },
-    // {
-    //   headerName: 'Completion %',
-    //   flex: 1.4,
-    //   minWidth: 130,
-    //   valueGetter: (p: any) => {
-    //     const row: FirmwareUpdateSummaryPort = p.data;
-    //     if (!row?.total) return 0;
-    //     return Math.round((row.completed / row.total) * 100);
-    //   },
-    //   cellRenderer: (p: any) => `${p.value}%`,
-    // },
+    {
+      field: 'overdue',
+      headerName: 'Overdue',
+      cellRenderer: (p: any) =>
+        `<span style="color:#dc2626;font-weight:600">₹${(p.value ?? 0).toLocaleString('en-IN')}</span>`,
+    },
   ];
 
-  // ── Chart 1: Devices per Port ─────────────────────────────────────
-  stateChartSeries: ApexAxisChartSeries = [{ name: 'Total Devices', data: [] }];
+  // ── Chart 1: Monthly Fee Collection ─────────────────────────────────
+  collectionChartSeries: ApexAxisChartSeries = [{ name: 'Collected', data: [] }];
 
-  stateChartOptions: {
+  collectionChartOptions: {
     chart: ApexChart; xaxis: ApexXAxis; yaxis: ApexYAxis;
     dataLabels: ApexDataLabels; plotOptions: ApexPlotOptions;
     stroke: ApexStroke; grid: ApexGrid; fill: ApexFill;
@@ -111,13 +101,13 @@ export class DashboardComponent implements OnInit {
     chart: { type: 'bar', height: 240, toolbar: { show: false }, fontFamily: 'Inter,sans-serif', background: 'transparent',
              animations: { enabled: true, speed: 600, animateGradually: { enabled: true, delay: 60 } } },
     plotOptions: { bar: { borderRadius: 5, columnWidth: '55%', dataLabels: { position: 'top' } } },
-    dataLabels: { enabled: true, formatter: (v: number) => v >= 1000 ? (v/1000).toFixed(1)+'k' : String(v),
+    dataLabels: { enabled: true, formatter: (v: number) => v >= 100000 ? '₹' + (v/100000).toFixed(1)+'L' : '₹' + (v/1000).toFixed(0)+'K',
                   offsetY: -18, style: { fontSize: '10px', colors: ['#374151'], fontWeight: '700' } },
     stroke: { show: true, width: 2, colors: ['transparent'] },
     xaxis: { categories: [],
              labels: { style: { fontSize: '10px', colors: '#6b7280' }, rotate: -30 },
              axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { formatter: (v: number) => v >= 1000 ? (v/1000).toFixed(1)+'k' : String(v),
+    yaxis: { labels: { formatter: (v: number) => v >= 100000 ? '₹' + (v/100000).toFixed(1)+'L' : '₹' + (v/1000).toFixed(0)+'K',
                        style: { fontSize: '10px', colors: '#9ca3af' } } },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4, yaxis: { lines: { show: true } }, xaxis: { lines: { show: false } } },
     fill: { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.25,
@@ -125,14 +115,14 @@ export class DashboardComponent implements OnInit {
     colors: ['#3b82f6'],
     tooltip: {
       fixed: { enabled: true, position: 'topRight', offsetX: -5, offsetY: 5 },
-      y: { formatter: (v: number) => v.toLocaleString() + ' devices' },
+      y: { formatter: (v: number) => '₹' + v.toLocaleString('en-IN') },
     },
   };
 
-  // ── Chart 2: Completed Devices per Port ───────────────────────────
-  fwChartSeries: ApexAxisChartSeries = [{ name: 'Completed', data: [] }];
+  // ── Chart 2: Fee Status Distribution ───────────────────────────────
+  statusChartSeries: ApexAxisChartSeries = [{ name: 'Amount', data: [] }];
 
-  fwChartOptions: {
+  statusChartOptions: {
     chart: ApexChart; xaxis: ApexXAxis; yaxis: ApexYAxis;
     dataLabels: ApexDataLabels; plotOptions: ApexPlotOptions;
     stroke: ApexStroke; grid: ApexGrid; fill: ApexFill;
@@ -141,14 +131,14 @@ export class DashboardComponent implements OnInit {
     chart: { type: 'bar', height: 240, toolbar: { show: false }, fontFamily: 'Inter,sans-serif', background: 'transparent',
              animations: { enabled: true, speed: 600, animateGradually: { enabled: true, delay: 80 } } },
     plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: '60%', dataLabels: { position: 'right' } } },
-    dataLabels: { enabled: true, formatter: (v: number) => v.toLocaleString(),
+    dataLabels: { enabled: true, formatter: (v: number) => '₹' + v.toLocaleString('en-IN'),
                   style: { fontSize: '10px', colors: ['#374151'], fontWeight: '700' }, offsetX: 4 },
     stroke: { show: false },
     xaxis: { categories: [],
-             labels: { formatter: (v: string) => Number(v) >= 1000 ? (Number(v)/1000).toFixed(1)+'k' : v,
+             labels: { formatter: (v: string) => Number(v) >= 100000 ? '₹' + (Number(v)/100000).toFixed(1)+'L' : '₹' + (Number(v)/1000).toFixed(0)+'K',
                        style: { fontSize: '10px', colors: '#9ca3af' } },
              axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { style: { fontSize: '11px', colors: '#4f46e5', fontFamily: 'Courier New,monospace', fontWeight: '700' } } },
+    yaxis: { labels: { style: { fontSize: '11px', colors: '#4f46e5', fontFamily: 'Inter,sans-serif', fontWeight: '700' } } },
     grid: { borderColor: '#f3f4f6', strokeDashArray: 4, xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
     fill: { type: 'gradient', gradient: { shade: 'light', type: 'horizontal', shadeIntensity: 0.2,
             gradientToColors: ['#93c5fd'], inverseColors: false, opacityFrom: 1, opacityTo: 0.8 } },
@@ -156,7 +146,7 @@ export class DashboardComponent implements OnInit {
     tooltip: {
       fixed: { enabled: true, position: 'topRight', offsetX: -5, offsetY: 5 },
       x: { show: true },
-      y: { formatter: (v: number) => v.toLocaleString() + ' devices' },
+      y: { formatter: (v: number) => '₹' + v.toLocaleString('en-IN') },
     },
   };
 
@@ -165,55 +155,48 @@ export class DashboardComponent implements OnInit {
     this.load();
   }
 
-  onRangeChange(range: DateRangeOption) {
-    this.selectedRange.set(range);
-    if (range !== 'custom') this.load();
-  }
-
-  onFromChange(value: string) {
-    this.customFrom = value;
-    if (this.customTo && value && this.customTo < value) this.customTo = value;
-  }
-
-  onToChange(value: string) {
-    this.customTo = value;
-    if (this.customFrom && value && value < this.customFrom) this.customFrom = value;
-  }
-
-  applyCustomRange() {
-    if (this.customFrom && this.customTo && this.customTo < this.customFrom) {
-      this.toast.error('"To" date cannot be earlier than "From" date');
-      return;
-    }
-    this.load();
-  }
-
   load() {
-    const { from, to } = computeDateRange(this.selectedRange(), this.customFrom, this.customTo);
-    const params = new URLSearchParams();
-    if (from) params.set('from', from);
-    if (to) params.set('to', to);
-    const qs = params.toString();
-
     this.loading.set(true);
-    this.ajax.ajaxget(`${API_BASE_URL}/reports/firmware-update/summary${qs ? '?' + qs : ''}`).subscribe({
-      next: (res) => {
-        const summary: FirmwareUpdateSummary = res?.data ?? { totalDevices: 0, completedDevices: 0, inProgressDevices: 0, disconnectedDevices: 0, ports: [] };
-        this.totalDevices.set(summary.totalDevices ?? 0);
-        this.completedDevices.set(summary.completedDevices ?? 0);
-        this.inProgressDevices.set(summary.inProgressDevices ?? 0);
-        this.disconnectedDevices.set(summary.disconnectedDevices ?? 0);
 
-        const ports = summary.ports ?? [];
-        this.portRowData.set(ports);
-        this.updatePortChart(ports);
-        this.updateCompletedChart(ports);
+    forkJoin({
+      summary: this.ajax.ajaxget(`${API_BASE_URL}/dashboard/summary`),
+      monthly: this.ajax.ajaxget(`${API_BASE_URL}/dashboard/monthly-collection`),
+      status: this.ajax.ajaxget(`${API_BASE_URL}/dashboard/status-distribution`),
+      classPending: this.ajax.ajaxget(`${API_BASE_URL}/dashboard/class-pending`),
+      recent: this.ajax.ajaxget(`${API_BASE_URL}/dashboard/recent-payments`)
+    }).subscribe({
+      next: (res) => {
+        const summary = res.summary?.data ?? { totalStudents: 0, totalFees: 0, totalCollected: 0, totalPending: 0, totalOverdue: 0 };
+        const monthly = (res.monthly as any)?.data as MonthlyCollection[] ?? [];
+        const statusDist = (res.status as any)?.data as FeeStatusCount[] ?? [];
+        const classes = (res.classPending as any)?.data as ClassWisePending[] ?? [];
+
+        this.totalStudents.set(summary.totalStudents ?? 0);
+        this.totalFees.set(summary.totalFees ?? 0);
+        this.totalCollected.set(summary.totalCollected ?? 0);
+        this.totalPending.set(summary.totalPending ?? 0);
+        this.totalOverdue.set(summary.totalOverdue ?? 0);
+
+        // Update charts
+        if (monthly.length) {
+          this.collectionChartSeries = [{ name: 'Collected', data: monthly.map(m => m.amount) }];
+          this.collectionChartOptions = { ...this.collectionChartOptions, xaxis: { ...this.collectionChartOptions.xaxis, categories: monthly.map(m => m.month) } };
+        }
+
+        if (statusDist.length) {
+          this.statusChartSeries = [{ name: 'Amount', data: statusDist.map(s => s.amount) }];
+          this.statusChartOptions = { ...this.statusChartOptions, xaxis: { ...this.statusChartOptions.xaxis, categories: statusDist.map(s => s.status) } };
+        }
+
+        // Update table
+        this.classRowData.set(classes);
+        this.updatePagedClasses();
 
         this.loading.set(false);
       },
       error: (err) => {
         this.loading.set(false);
-        this.toast.error(err?.error?.message || 'Failed to load dashboard summary');
+        this.toast.error('Failed to load dashboard data');
       },
     });
   }
@@ -231,25 +214,28 @@ export class DashboardComponent implements OnInit {
     fitColumns(this.gridApi, this.gridWrapper?.nativeElement);
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────
-  private updatePortChart(ports: FirmwareUpdateSummaryPort[]) {
-    this.stateChartSeries = [{ name: 'Total Devices', data: ports.map((p) => p.total) }];
-    this.stateChartOptions = { ...this.stateChartOptions, xaxis: { ...this.stateChartOptions.xaxis, categories: ports.map((p) => String(p.port)) } };
+  private updatePagedClasses() {
+    this.pagedClasses.set(paginate(this.classRowData(), this.mobilePage()));
   }
 
-  private updateCompletedChart(ports: FirmwareUpdateSummaryPort[]) {
-    const sorted = [...ports].sort((a, b) => b.completed - a.completed).slice(0, 6);
-    this.fwChartSeries = [{ name: 'Completed', data: sorted.map((p) => p.completed) }];
-    this.fwChartOptions = { ...this.fwChartOptions, xaxis: { ...this.fwChartOptions.xaxis, categories: sorted.map((p) => String(p.port)) } };
+  onPageChange(page: number) {
+    this.mobilePage.set(page);
+    this.updatePagedClasses();
   }
 
+  formatCurrency(value: number): string {
+    return '₹' + value.toLocaleString('en-IN');
+  }
+
+  // ── Exports ──────────────────────────────────────────────────────
   private exportRows() {
-    return getDisplayedRows(this.gridApi, this.portRowData()).map((p) => ({
-      'Port': p.port,
-      'Total Devices': p.total,
-      'Completed': p.completed,
-      'In Progress': p.inProgress,
-      'Disconnected': p.disconnected,
+    return getDisplayedRows(this.gridApi, this.classRowData()).map((c) => ({
+      'Class': c.class,
+      'Total Students': c.totalStudents,
+      'Total Fees': c.totalFees,
+      'Collected': c.collected,
+      'Pending': c.pending,
+      'Overdue': c.overdue,
     }));
   }
 
@@ -259,7 +245,7 @@ export class DashboardComponent implements OnInit {
       this.toast.error('No data to export');
       return;
     }
-    this.pdfExport.generatePdf(rows, String(rows.length), 'Firmware Update Status by Port', 'Total Records:');
+    this.pdfExport.generatePdf(rows, String(rows.length), 'Class-wise Fee Status', 'Total Records:');
   }
 
   exportExcel() {
@@ -268,6 +254,6 @@ export class DashboardComponent implements OnInit {
       this.toast.error('No data to export');
       return;
     }
-    this.excelExport.exportExcel(rows, String(rows.length), 'Firmware Update Status by Port', 'Total Records:');
+    this.excelExport.exportExcel(rows, String(rows.length), 'Class-wise Fee Status', 'Total Records:');
   }
 }

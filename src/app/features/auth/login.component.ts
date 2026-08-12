@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -16,37 +16,31 @@ export class LoginComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private toast  = inject(ToastService);
 
-  username = '';
+  email = '';
   password = '';
   showPass = signal(false);
   loading  = signal(false);
   error    = signal('');
 
-  // Faint decorative world-map dot field for the background
+  // Faint decorative dot field for the education-themed background
   mapDots = Array.from({ length: 90 }, (_, i) => ({
     x: 90 + ((i * 137) % 1280),
     y: 70 + ((i * 79) % 760),
   }));
 
-  // "UPDATE" ring — loops 0% -> 100% -> (brief hold) -> 0% forever, simulating
-  // a repeating firmware deployment cycle rather than a one-off animation.
+  // Animated progress ring — loops 0% -> 100%, simulating a fee collection tracker
   readonly ringCircumference = 2 * Math.PI * 46;
   uploadPercent = signal(0);
 
-  // Terminal lines reveal in step with the ring's progress (5 lines over 5 stages
-  // of 20% each), so the "boot sequence" finishes right as the ring hits 100%.
+  // Education-themed status messages for the background animation
   readonly terminalLines = [
-    '> Checking for updates...',
-    '> Downloading package...',
-    '> Verifying integrity...',
-    '> Installing update...',
-    '> Update successful ✓',
+    '> Loading student records...',
+    '> Calculating fee balances...',
+    '> Processing payments...',
+    '> Generating reports...',
+    '> System ready ✓',
   ];
-  visibleTerminalLines = computed(() => {
-    const pct = this.uploadPercent();
-    if (pct <= 0) return 0;
-    return Math.min(this.terminalLines.length, Math.ceil(pct / 20));
-  });
+  visibleTerminalLines = signal(0);
 
   private rafId?: number;
   private readonly cycleMs = 3200;
@@ -66,20 +60,24 @@ export class LoginComponent implements OnInit, OnDestroy {
     const step = (now: number) => {
       const elapsed = (now - start) % totalCycle;
       const pct = elapsed <= this.cycleMs ? (elapsed / this.cycleMs) * 100 : 100;
-      this.uploadPercent.set(Math.round(pct));
+      const rounded = Math.round(pct);
+      this.uploadPercent.set(rounded);
+      // Reveal terminal lines step by step
+      if (rounded <= 0) this.visibleTerminalLines.set(0);
+      else this.visibleTerminalLines.set(Math.min(this.terminalLines.length, Math.ceil(rounded / 20)));
       this.rafId = requestAnimationFrame(step);
     };
     this.rafId = requestAnimationFrame(step);
   }
 
   onLogin() {
-    if (!this.username.trim() || !this.password.trim()) {
-      this.error.set('Please enter your username and password.');
+    if (!this.email.trim() || !this.password.trim()) {
+      this.error.set('Please enter your email and password.');
       return;
     }
     this.error.set('');
     this.loading.set(true);
-    this.auth.login(this.username, this.password).subscribe((result) => {
+    this.auth.login(this.email, this.password).subscribe((result) => {
       if (result.success) {
         this.toast.success('Login successful. Welcome back!');
         this.router.navigate(['/dashboard']);

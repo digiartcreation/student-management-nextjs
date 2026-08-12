@@ -1,83 +1,69 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
-  Device, DeviceModel, FirmwareVersion, UpdateJob,
-  DashboardSummary, DevicesByModel, FirmwareAdoption
-} from '../models/fota.models';
+  Student, StudentMapping, FeeRecord, Payment, Receipt,
+  DashboardSummary,
+} from '../models/student.models';
 
-const API = '/api/v1';
+const API = '/api';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
 
-  // ── Device Models ────────────────────────────────────────────────────────
-  getModels(): Observable<DeviceModel[]> {
-    return this.http.get<DeviceModel[]>(`${API}/models`);
+  // ── Dashboard ──────────────────────────────────────────────────────────────
+  getDashboardSummary(): Observable<{ data: DashboardSummary }> {
+    return this.http.get<{ data: DashboardSummary }>(`${API}/dashboard/summary`);
   }
 
-  createModel(payload: Partial<DeviceModel>): Observable<DeviceModel> {
-    return this.http.post<DeviceModel>(`${API}/models`, payload);
+  // ── Students ──────────────────────────────────────────────────────────────
+  getStudents(): Observable<{ data: Student[] }> {
+    return this.http.get<{ data: Student[] }>(`${API}/students`);
   }
 
-  updateModel(modelCode: string, payload: Partial<DeviceModel>): Observable<DeviceModel> {
-    return this.http.patch<DeviceModel>(`${API}/models/${modelCode}`, payload);
+  getStudent(id: number): Observable<{ data: Student }> {
+    return this.http.get<{ data: Student }>(`${API}/students/${id}`);
   }
 
-  // ── Devices ──────────────────────────────────────────────────────────────
-  getDevices(): Observable<Device[]> {
-    return this.http.get<Device[]>(`${API}/devices`);
+  createStudent(payload: Partial<Student>): Observable<{ data: Student }> {
+    return this.http.post<{ data: Student }>(`${API}/students`, payload);
   }
 
-  getDevicesByModel(modelCode: string): Observable<Device[]> {
-    return this.http.get<Device[]>(`${API}/devices/model/${modelCode}`);
+  updateStudent(id: number, payload: Partial<Student>): Observable<{ data: Student }> {
+    return this.http.put<{ data: Student }>(`${API}/students/${id}`, payload);
   }
 
-  getDeviceJobs(deviceId: string): Observable<UpdateJob[]> {
-    return this.http.get<UpdateJob[]>(`${API}/devices/${deviceId}/jobs`);
+  toggleStudentStatus(id: number): Observable<{ data: Student }> {
+    return this.http.patch<{ data: Student }>(`${API}/students/${id}/toggle-status`, {});
   }
 
-  // ── Firmware ─────────────────────────────────────────────────────────────
-  getAllFirmware(): Observable<FirmwareVersion[]> {
-    return this.http.get<FirmwareVersion[]>(`${API}/firmware`);
+  // ── Student Mappings ───────────────────────────────────────────────────────
+  getStudentMappings(): Observable<{ data: StudentMapping[] }> {
+    return this.http.get<{ data: StudentMapping[] }>(`${API}/student-mappings`);
   }
 
-  getFirmwareForModel(modelCode: string): Observable<FirmwareVersion[]> {
-    return this.http.get<FirmwareVersion[]>(`${API}/firmware/model/${modelCode}`);
+  createStudentMapping(payload: Partial<StudentMapping>): Observable<{ data: StudentMapping }> {
+    return this.http.post<{ data: StudentMapping }>(`${API}/student-mappings`, payload);
   }
 
-  uploadFirmware(formData: FormData): Observable<FirmwareVersion> {
-    return this.http.post<FirmwareVersion>(`${API}/firmware`, formData);
+  // ── Fees ───────────────────────────────────────────────────────────────────
+  getFees(status?: string): Observable<{ data: FeeRecord[] }> {
+    const params = status && status !== 'all' ? `?status=${status.toUpperCase()}` : '';
+    return this.http.get<{ data: FeeRecord[] }>(`${API}/fees${params}`);
   }
 
-  publishFirmware(id: number): Observable<FirmwareVersion> {
-    return this.http.post<FirmwareVersion>(`${API}/firmware/${id}/publish`, {});
+  getFee(id: number): Observable<{ data: FeeRecord }> {
+    return this.http.get<{ data: FeeRecord }>(`${API}/fees/${id}`);
   }
 
-  deprecateFirmware(id: number): Observable<FirmwareVersion> {
-    return this.http.post<FirmwareVersion>(`${API}/firmware/${id}/deprecate`, {});
+  // ── Payments ───────────────────────────────────────────────────────────────
+  recordPayment(payload: Partial<Payment>): Observable<{ data: Payment }> {
+    return this.http.post<{ data: Payment }>(`${API}/payments`, payload);
   }
 
-  // ── Update Jobs ───────────────────────────────────────────────────────────
-  getAllJobs(): Observable<UpdateJob[]> {
-    return this.http.get<UpdateJob[]>(`${API}/jobs`);
-  }
-
-  // ── Analytics ─────────────────────────────────────────────────────────────
-  getSummary(): Observable<DashboardSummary> {
-    return this.http.get<DashboardSummary>(`${API}/analytics/summary`);
-  }
-
-  getDevicesByModelStats(): Observable<DevicesByModel[]> {
-    return this.http.get<DevicesByModel[]>(`${API}/analytics/devices-by-model`);
-  }
-
-  getFirmwareAdoption(): Observable<FirmwareAdoption[]> {
-    return this.http.get<FirmwareAdoption[]>(`${API}/analytics/firmware-adoption`);
-  }
-
-  getJobsByStatus(): Observable<Record<string, number>> {
-    return this.http.get<Record<string, number>>(`${API}/analytics/jobs-by-status`);
+  // ── Receipts ───────────────────────────────────────────────────────────────
+  getReceipt(id: number): Observable<{ data: Receipt }> {
+    return this.http.get<{ data: Receipt }>(`${API}/receipts/${id}`);
   }
 }

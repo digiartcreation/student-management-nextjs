@@ -1,0 +1,215 @@
+<div class="flex flex-col gap-5">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 class="m-0 text-xl font-extrabold text-gray-900">Students</h2>
+      <p class="mt-0.5 text-sm text-gray-500">Manage student records and enrollment</p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <div class="relative inline-flex items-center">
+        <svg class="pointer-events-none absolute left-3 h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          type="text"
+          class="w-64 rounded-lg border border-gray-200 bg-white py-2 pr-4 pl-9 text-sm text-gray-700 outline-none transition-colors placeholder:text-gray-400 focus:border-indigo-600"
+          placeholder="Search students…"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"/>
+      </div>
+      <button class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white p-2 text-red-500 transition-colors hover:bg-red-50 cursor-pointer" title="Export PDF" (click)="exportPdf()">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+        </svg><span class="text-[11px] font-bold md:hidden">PDF</span>
+      </button>
+      <button class="flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white p-2 text-green-600 transition-colors hover:bg-green-50 cursor-pointer" title="Export Excel" (click)="exportExcel()">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.5h16.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H3.75a.75.75 0 01-.75-.75V5.25a.75.75 0 01.75-.75zM3 9.75h18M3 14.25h18M9 4.5v15M15 4.5v15"/>
+        </svg><span class="text-[11px] font-bold md:hidden">Excel</span>
+      </button>
+      <button class="flex shrink-0 items-center gap-1.5 rounded-lg bg-indigo-600 px-[1.1rem] py-2 text-sm font-bold tracking-wide text-white transition-colors hover:bg-indigo-700 cursor-pointer" (click)="openAdd()">
+        <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        Add Student
+      </button>
+    </div>
+  </div>
+
+  <!-- AG Grid — desktop/tablet -->
+  <div #gridWrapper class="hidden overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)] md:block">
+    <ag-grid-angular
+      [theme]="gridTheme.getTheme()"
+      style="height:82vh;width:100%"
+      [rowData]="filteredStudents()"
+      [columnDefs]="colDefs"
+      [defaultColDef]="defaultColDef"
+      [enableCellTextSelection]="true"
+      [rowHeight]="52"
+      [headerHeight]="44"
+      [animateRows]="true"
+      [suppressMovableColumns]="true"
+      [suppressHorizontalScroll]="true"
+      [pagination]="true"
+      [paginationPageSize]="15"
+      (gridReady)="onGridReady($event)"
+      (firstDataRendered)="onGridDataChanged()"
+      (rowDataUpdated)="onGridDataChanged()"
+    ></ag-grid-angular>
+  </div>
+
+  <!-- Cards — mobile -->
+  <div class="flex flex-col gap-3 md:hidden">
+    @for (s of pagedStudents(); track s.id) {
+      <div class="rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <span class="text-sm font-bold text-gray-900">{{ s.name }}</span>
+            <span class="ml-2 text-xs text-gray-400">{{ s.studentId }}</span>
+          </div>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
+            [class]="s.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">{{ s.status }}</span>
+        </div>
+        <div class="mt-2 grid grid-cols-2 gap-1.5 text-xs text-gray-500">
+          <div><span class="font-medium text-gray-700">Class ID:</span> {{ s.classId }}</div>
+          <div><span class="font-medium text-gray-700">Section ID:</span> {{ s.sectionId }}</div>
+          <div><span class="font-medium text-gray-700">Parent:</span> {{ s.parentName }}</div>
+          <div><span class="font-medium text-gray-700">Mobile:</span> {{ s.mobile }}</div>
+        </div>
+        <div class="mt-2 flex gap-2">
+          <button class="rounded-md bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 cursor-pointer" (click)="openEdit(s)">Edit</button>
+        </div>
+      </div>
+    } @empty {
+      <div class="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-8 text-center">
+        <p class="m-0 text-sm font-semibold text-gray-500">No students found</p>
+      </div>
+    }
+    <app-mobile-pagination [total]="filteredStudents().length" [page]="mobilePage()" (pageChange)="mobilePage.set($event)"/>
+  </div>
+</div>
+
+<!-- ── Add/Edit Student Drawer ─────────────────────────── -->
+@if (showAdd()) {
+  <div class="fixed inset-0 z-[100] flex items-start justify-end bg-black/40" (click)="closeDrawer()">
+    <div class="flex h-full w-full max-w-[480px] flex-col bg-white shadow-[-8px_0_30px_rgba(0,0,0,0.15)] animate-slide-in" (click)="$event.stopPropagation()">
+      <!-- Drawer header -->
+      <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
+        <h3 class="m-0 text-[1.05rem] font-bold text-gray-900">{{ editingStudent() ? 'Edit Student' : 'Add Student' }}</h3>
+        <button class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer" (click)="closeDrawer()">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Drawer body -->
+      <div class="flex-1 overflow-y-auto px-6 py-5">
+        <div class="flex flex-col gap-4">
+          <!-- Personal Info -->
+          <h4 class="m-0 text-xs font-bold tracking-wider text-gray-400 uppercase">Personal Information</h4>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Student Name *</label>
+              <input type="text" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.name" placeholder="Full name"/>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Admission Number</label>
+              <input type="text" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.admissionNumber" placeholder="ADM-2025-001"/>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Gender</label>
+              <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.gender">
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Date of Birth</label>
+              <input type="date" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.dateOfBirth"/>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Admission Date</label>
+              <input type="date" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.admissionDate"/>
+            </div>
+          </div>
+
+          <!-- Academic Info -->
+          <h4 class="m-0 mt-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Academic Information</h4>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Class ID *</label>
+              <input type="number" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.classId" placeholder="10"/>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Section ID</label>
+              <input type="number" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.sectionId" placeholder="1"/>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Academic Year ID</label>
+              <input type="number" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.academicYearId" placeholder="1"/>
+            </div>
+          </div>
+
+          <!-- Guardian Info -->
+          <h4 class="m-0 mt-2 text-xs font-bold tracking-wider text-gray-400 uppercase">Guardian Information</h4>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Parent/Guardian Name</label>
+              <input type="text" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.parentName" placeholder="Parent name"/>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Relationship</label>
+              <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.relationship">
+                <option value="Father">Father</option>
+                <option value="Mother">Mother</option>
+                <option value="Guardian">Guardian</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Mobile</label>
+              <input type="tel" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.mobile" placeholder="9876543210"/>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-semibold text-gray-600">Email</label>
+              <input type="email" class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.email" placeholder="email@example.com"/>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-600">Address</label>
+            <textarea class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" rows="2" [(ngModel)]="form.address" placeholder="Full address"></textarea>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs font-semibold text-gray-600">Status</label>
+            <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white" [(ngModel)]="form.status">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drawer footer -->
+      <div class="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-6 py-4">
+        <button class="rounded-lg bg-gray-200 px-5 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-300 cursor-pointer" (click)="closeDrawer()">Cancel</button>
+        <button class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 cursor-pointer" (click)="saveStudent()">
+          {{ editingStudent() ? 'Update' : 'Add Student' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

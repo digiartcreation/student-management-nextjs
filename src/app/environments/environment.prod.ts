@@ -1,21 +1,14 @@
-export const API_BASE_URL = 'https://fota.apmkingstrack.com';
+export const API_BASE_URL = '/api';
 
 export const ServerUrl = {
   live: API_BASE_URL,
   admin: API_BASE_URL,
-  websocketIp: API_BASE_URL,
+  websocketIp: '',
   s3ServerName: '',
 };
 
 export const environment = {
   production: true,
-  firebase: {
-    apiKey: "************************************",
-    authDomain: "**********************************************",
-    projectId: "**********************************************",
-    storageBucket: "**********************************************",
-    messagingSenderId: "**********************************************",
-    appId: "**********************************************",
-    measurementId: "**********************************************"
-  },
+  apiBaseUrl: 'http://localhost:3000/api',
+  apiUrl: 'http://localhost:3000/api',
 };

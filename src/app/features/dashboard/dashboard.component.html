@@ -4,121 +4,88 @@
   <div class="flex flex-wrap items-start justify-between gap-4">
     <div>
       <h2 class="m-0 text-[1.3rem] font-extrabold tracking-tight text-[#1a2e12]">Dashboard</h2>
-      <p class="mt-[0.2rem] text-[0.8rem] text-gray-500">Fleet overview and firmware update status</p>
-    </div>
-
-    <div class="flex flex-wrap items-end gap-3">
-      <div class="flex flex-col gap-1">
-        <label class="text-[0.68rem] font-semibold tracking-wide text-gray-500">Date Range</label>
-        <ng-select
-          class="date-range-select w-44"
-          [items]="rangeOptions"
-          bindLabel="label"
-          bindValue="value"
-          [clearable]="false"
-          [searchable]="false"
-          [appendTo]="'body'"
-          [ngModel]="selectedRange()"
-          (ngModelChange)="onRangeChange($event)">
-        </ng-select>
-      </div>
-
-      @if (selectedRange() === 'custom') {
-        <div class="flex flex-col gap-1">
-          <label class="text-[0.68rem] font-semibold tracking-wide text-gray-500">From</label>
-          <input type="date" class="h-[3.52vh] rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition-colors focus:border-indigo-600 focus:bg-white"
-            [ngModel]="customFrom" (ngModelChange)="onFromChange($event)" [max]="customTo || null"/>
-        </div>
-        <div class="flex flex-col gap-1">
-          <label class="text-[0.68rem] font-semibold tracking-wide text-gray-500">To</label>
-          <input type="date" class="h-[3.52vh] rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition-colors focus:border-indigo-600 focus:bg-white"
-            [ngModel]="customTo" (ngModelChange)="onToChange($event)" [min]="customFrom || null"/>
-        </div>
-        <button type="button" class="h-[3.52vh] rounded-lg bg-[#7c73e6] px-5 text-sm font-bold tracking-wider text-white transition-colors hover:bg-indigo-600 cursor-pointer" (click)="applyCustomRange()">Apply</button>
-      }
+      <p class="mt-[0.2rem] text-[0.8rem] text-gray-500">Student fee overview and collection status</p>
     </div>
   </div>
 
   <!-- ── HERO CARDS ──────────────────────────────────────────── -->
-  <div class="grid grid-cols-4 gap-4 max-[40vw]:grid-cols-1">
+  <div class="grid grid-cols-5 gap-4 max-lg:grid-cols-3 max-sm:grid-cols-1">
 
-    <!-- Total Devices – Amber -->
+    <!-- Total Students – Amber -->
     <div class="flex min-h-[11.11vh] items-center justify-between overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-amber-500 to-amber-600 px-5 py-6 text-white shadow-[0_0.37vh_1.67vh_rgba(0,0,0,0.12)]">
       <div class="flex-1">
-        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Total Devices</div>
-        <div class="text-[2.6rem] leading-none font-extrabold tracking-tight">{{ totalDevices() | number }}</div>
+        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Total Students</div>
+        <div class="text-[2.6rem] leading-none font-extrabold tracking-tight">{{ totalStudents() | number }}</div>
         <div class="mt-1.5 text-[0.7rem] opacity-70">Registered in system</div>
       </div>
       <div class="w-[4.58vw] shrink-0 opacity-55">
         <svg class="h-[6.48vh] w-[4.58vw]" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="28" y="10" width="44" height="60" rx="8" stroke-opacity="0.55" stroke-width="2"/>
-          <rect x="37" y="20" width="26" height="18" rx="3" stroke-opacity="0.4"/>
-          <circle cx="50" cy="56" r="5" stroke-opacity="0.5" fill="currentColor" fill-opacity="0.2"/>
-          <line x1="42" y1="65" x2="58" y2="65" stroke-opacity="0.4" stroke-width="2.5"/>
-          <circle cx="78" cy="16" r="9" stroke-opacity="0.3" stroke-width="2"/>
-          <path d="M75 16 L78 12 L81 16" stroke-opacity="0.4" fill="none" stroke-width="2"/>
-          <circle cx="22" cy="62" r="7" stroke-opacity="0.3" stroke-width="2"/>
-          <path d="M19 62 L22 58 L25 62" stroke-opacity="0.4" fill="none" stroke-width="2"/>
+          <!-- Student/people icon -->
+          <circle cx="40" cy="28" r="12" stroke-opacity="0.6" stroke-width="2"/>
+          <path d="M20 68 Q20 48 40 48 Q60 48 60 68" stroke-opacity="0.5" stroke-width="2" fill="none"/>
+          <circle cx="68" cy="32" r="8" stroke-opacity="0.4" stroke-width="1.5"/>
+          <path d="M56 65 Q56 52 68 52 Q80 52 80 65" stroke-opacity="0.35" stroke-width="1.5" fill="none"/>
         </svg>
       </div>
     </div>
 
-    <!-- Completed Updates – Blue -->
+    <!-- Total Fees – Indigo -->
+    <div class="flex min-h-[11.11vh] items-center justify-between overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-indigo-500 to-indigo-700 px-5 py-6 text-white shadow-[0_0.37vh_1.67vh_rgba(0,0,0,0.12)]">
+      <div class="flex-1">
+        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Total Fees</div>
+        <div class="text-[2rem] leading-none font-extrabold tracking-tight">{{ formatCurrency(totalFees()) }}</div>
+        <div class="mt-1.5 text-[0.7rem] opacity-70">Total fee amount</div>
+      </div>
+      <div class="w-[4.58vw] shrink-0 opacity-55">
+        <svg class="h-[6.48vh] w-[4.58vw]" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="20" y="15" width="60" height="50" rx="8" stroke-opacity="0.5" stroke-width="2"/>
+          <text x="50" y="50" text-anchor="middle" fill="currentColor" fill-opacity="0.5" font-size="28" font-weight="700" font-family="system-ui">₹</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Collected – Blue -->
     <div class="flex min-h-[11.11vh] items-center justify-between overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-blue-500 to-blue-700 px-5 py-6 text-white shadow-[0_0.37vh_1.67vh_rgba(0,0,0,0.12)]">
       <div class="flex-1">
-        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Completed Updates</div>
-        <div class="text-[2.6rem] leading-none font-extrabold tracking-tight">{{ completedDevices() | number }}</div>
-        <div class="mt-1.5 text-[0.7rem] opacity-70">Firmware updates completed</div>
+        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Collected</div>
+        <div class="text-[2rem] leading-none font-extrabold tracking-tight">{{ formatCurrency(totalCollected()) }}</div>
+        <div class="mt-1.5 text-[0.7rem] opacity-70">Total fees collected</div>
       </div>
       <div class="w-[4.58vw] shrink-0 opacity-55">
         <svg class="h-[6.48vh] w-[4.58vw]" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="50" cy="42" r="7" fill="currentColor" fill-opacity="0.3" stroke-opacity="0.7" stroke-width="2"/>
-          <circle cx="50" cy="42" r="18" stroke-opacity="0.3" stroke-width="1.5"/>
-          <circle cx="50" cy="42" r="30" stroke-opacity="0.15" stroke-width="1.5"/>
-          <path d="M30 24 Q50 14 70 24" stroke-opacity="0.45" fill="none" stroke-width="2"/>
-          <path d="M22 34 Q50 10 78 34" stroke-opacity="0.25" fill="none" stroke-width="2"/>
-          <line x1="50" y1="42" x2="74" y2="24" stroke-opacity="0.3" stroke-dasharray="3 3"/>
-          <line x1="50" y1="42" x2="28" y2="60" stroke-opacity="0.3" stroke-dasharray="3 3"/>
-          <circle cx="74" cy="24" r="3" fill="currentColor" fill-opacity="0.5"/>
-          <circle cx="28" cy="60" r="3" fill="currentColor" fill-opacity="0.5"/>
+          <circle cx="50" cy="40" r="24" stroke-opacity="0.4" stroke-width="2"/>
+          <path d="M38 40 L46 48 L64 32" stroke-opacity="0.7" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
     </div>
 
-    <!-- Pending Updates – Teal -->
+    <!-- Pending – Teal -->
     <div class="flex min-h-[11.11vh] items-center justify-between overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-teal-600 to-teal-700 px-5 py-6 text-white shadow-[0_0.37vh_1.67vh_rgba(0,0,0,0.12)]">
       <div class="flex-1">
-        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">In Progress Updates</div>
-        <div class="text-[2.6rem] leading-none font-extrabold tracking-tight">{{ inProgressDevices() | number }}</div>
-        <div class="mt-1.5 text-[0.7rem] opacity-70">Firmware updates in progress</div>
+        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Pending</div>
+        <div class="text-[2rem] leading-none font-extrabold tracking-tight">{{ formatCurrency(totalPending()) }}</div>
+        <div class="mt-1.5 text-[0.7rem] opacity-70">Fees pending collection</div>
       </div>
       <div class="w-[4.58vw] shrink-0 opacity-55">
         <svg class="h-[6.48vh] w-[4.58vw]" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M50 58 L50 24" stroke-width="2.5" stroke-opacity="0.55" stroke-linecap="round"/>
-          <path d="M36 38 L50 22 L64 38" stroke-width="2.5" stroke-opacity="0.55" fill="none" stroke-linejoin="round"/>
-          <rect x="28" y="60" width="44" height="10" rx="4" stroke-opacity="0.4" stroke-width="2"/>
-          <rect x="12" y="38" width="18" height="14" rx="3" stroke-opacity="0.3" stroke-width="1.5"/>
-          <path d="M18 43 L21 40 L24 43" stroke-opacity="0.4" fill="none" stroke-width="1.5"/>
-          <rect x="70" y="38" width="18" height="14" rx="3" stroke-opacity="0.3" stroke-width="1.5"/>
-          <path d="M76 43 L79 40 L82 43" stroke-opacity="0.4" fill="none" stroke-width="1.5"/>
+          <circle cx="50" cy="40" r="24" stroke-opacity="0.4" stroke-width="2"/>
+          <path d="M50 24 V42 L60 50" stroke-opacity="0.6" stroke-width="2.5" fill="none" stroke-linecap="round"/>
         </svg>
       </div>
     </div>
 
-    <!-- Disconnected – Red -->
+    <!-- Overdue – Red -->
     <div class="flex min-h-[120px] items-center justify-between overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-red-500 to-red-700 px-5 py-6 text-white shadow-[0_4px_18px_rgba(0,0,0,0.12)]">
       <div class="flex-1">
-        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Disconnected</div>
-        <div class="text-[2.6rem] leading-none font-extrabold tracking-tight">{{ disconnectedDevices() | number }}</div>
-        <div class="mt-1.5 text-[0.7rem] opacity-70">Devices disconnected</div>
+        <div class="mb-1.5 text-[0.7rem] font-semibold tracking-wider uppercase opacity-80">Overdue</div>
+        <div class="text-[2rem] leading-none font-extrabold tracking-tight">{{ formatCurrency(totalOverdue()) }}</div>
+        <div class="mt-1.5 text-[0.7rem] opacity-70">Past due date</div>
       </div>
       <div class="w-[88px] shrink-0 opacity-55">
         <svg class="h-[70px] w-[88px]" viewBox="0 0 100 80" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M28 50 L42 50 L48 38 L56 62 L62 50 L72 50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="24" cy="24" r="9" stroke-opacity="0.4" stroke-width="2"/>
-          <path d="M20 20 L28 28 M28 20 L20 28" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="76" cy="24" r="9" stroke-opacity="0.4" stroke-width="2"/>
-          <path d="M72 20 L80 28 M80 20 L72 28" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="50" cy="35" r="22" stroke-opacity="0.4" stroke-width="2"/>
+          <path d="M50 22 V38" stroke-opacity="0.6" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="50" cy="46" r="2" fill="currentColor" fill-opacity="0.6"/>
         </svg>
       </div>
     </div>
@@ -129,60 +96,60 @@
   <!-- ═══════════════════════════════════════════════════════════ -->
   <div class="grid grid-cols-2 gap-4 max-[46.88vw]:grid-cols-1">
 
-    <!-- Chart 1 – Devices by Port -->
+    <!-- Chart 1 – Monthly Fee Collection -->
     <div class="flex flex-col rounded-2xl border border-[#f0f0f0] bg-white px-5 pt-[1.1rem] pb-3 shadow-[0_0.09vh_0.56vh_rgba(0,0,0,0.07)]">
       <div class="mb-[0.1rem] flex items-start justify-between gap-2">
         <div>
-          <h3 class="m-0 text-[0.825rem] font-bold text-gray-800">Devices by Port</h3>
-          <p class="mt-[0.15rem] text-[0.68rem] text-gray-400">Total tracked devices per firmware port</p>
+          <h3 class="m-0 text-[0.825rem] font-bold text-gray-800">Monthly Fee Collection</h3>
+          <p class="mt-[0.15rem] text-[0.68rem] text-gray-400">Fee collection by month</p>
         </div>
-        <span class="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-[0.2rem] text-[0.68rem] font-semibold whitespace-nowrap text-indigo-500">All Ports</span>
+        <span class="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-[0.2rem] text-[0.68rem] font-semibold whitespace-nowrap text-indigo-500">All Months</span>
       </div>
       <apx-chart
-        [series]="stateChartSeries"
-        [chart]="stateChartOptions.chart"
-        [plotOptions]="stateChartOptions.plotOptions"
-        [dataLabels]="stateChartOptions.dataLabels"
-        [stroke]="stateChartOptions.stroke"
-        [xaxis]="stateChartOptions.xaxis"
-        [yaxis]="stateChartOptions.yaxis"
-        [grid]="stateChartOptions.grid"
-        [fill]="stateChartOptions.fill"
-        [colors]="stateChartOptions.colors"
-        [tooltip]="stateChartOptions.tooltip"
+        [series]="collectionChartSeries"
+        [chart]="collectionChartOptions.chart"
+        [plotOptions]="collectionChartOptions.plotOptions"
+        [dataLabels]="collectionChartOptions.dataLabels"
+        [stroke]="collectionChartOptions.stroke"
+        [xaxis]="collectionChartOptions.xaxis"
+        [yaxis]="collectionChartOptions.yaxis"
+        [grid]="collectionChartOptions.grid"
+        [fill]="collectionChartOptions.fill"
+        [colors]="collectionChartOptions.colors"
+        [tooltip]="collectionChartOptions.tooltip"
       ></apx-chart>
       <div class="mt-1 flex gap-4 border-t border-gray-100 pt-1.5">
         <span class="flex items-center gap-1.5 text-[0.7rem] font-medium text-gray-500">
-          <i class="mr-1 inline-block h-[0.65vh] w-[0.36vw] rounded-full align-middle bg-blue-500"></i>Total Devices
+          <i class="mr-1 inline-block h-[0.65vh] w-[0.36vw] rounded-full align-middle bg-blue-500"></i>Fee Collected
         </span>
       </div>
     </div>
 
-    <!-- Chart 2 – Completed Devices by Port -->
+    <!-- Chart 2 – Fee Status Distribution -->
     <div class="flex flex-col rounded-2xl border border-[#f0f0f0] bg-white px-5 pt-[1.1rem] pb-3 shadow-[0_0.09vh_0.56vh_rgba(0,0,0,0.07)]">
       <div class="mb-[0.1rem] flex items-start justify-between gap-2">
         <div>
-          <h3 class="m-0 text-[0.825rem] font-bold text-gray-800">Completed Updates by Port</h3>
-          <p class="mt-[0.15rem] text-[0.68rem] text-gray-400">Number of devices completed per port (top 6)</p>
+          <h3 class="m-0 text-[0.825rem] font-bold text-gray-800">Fee Status Distribution</h3>
+          <p class="mt-[0.15rem] text-[0.68rem] text-gray-400">Amount breakdown by payment status</p>
         </div>
-        <span class="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-[0.2rem] text-[0.68rem] font-semibold whitespace-nowrap text-indigo-500">Top 6 Ports</span>
+        <span class="shrink-0 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-[0.2rem] text-[0.68rem] font-semibold whitespace-nowrap text-indigo-500">All Status</span>
       </div>
       <apx-chart
-        [series]="fwChartSeries"
-        [chart]="fwChartOptions.chart"
-        [plotOptions]="fwChartOptions.plotOptions"
-        [dataLabels]="fwChartOptions.dataLabels"
-        [stroke]="fwChartOptions.stroke"
-        [xaxis]="fwChartOptions.xaxis"
-        [yaxis]="fwChartOptions.yaxis"
-        [grid]="fwChartOptions.grid"
-        [fill]="fwChartOptions.fill"
-        [colors]="fwChartOptions.colors"
-        [tooltip]="fwChartOptions.tooltip"
+        [series]="statusChartSeries"
+        [chart]="statusChartOptions.chart"
+        [plotOptions]="statusChartOptions.plotOptions"
+        [dataLabels]="statusChartOptions.dataLabels"
+        [stroke]="statusChartOptions.stroke"
+        [xaxis]="statusChartOptions.xaxis"
+        [yaxis]="statusChartOptions.yaxis"
+        [grid]="statusChartOptions.grid"
+        [fill]="statusChartOptions.fill"
+        [colors]="statusChartOptions.colors"
+        [tooltip]="statusChartOptions.tooltip"
       ></apx-chart>
       <div class="mt-1 flex gap-4 border-t border-gray-100 pt-1.5">
         <span class="flex items-center gap-1.5 text-[0.7rem] font-medium text-gray-500">
-          <i class="mr-1 inline-block h-[0.65vh] w-[0.36vw] rounded-full align-middle bg-blue-500"></i>Devices Updated
+          <i class="mr-1 inline-block h-[0.65vh] w-[0.36vw] rounded-full align-middle bg-blue-500"></i>Amount (₹)
         </span>
       </div>
     </div>
@@ -190,13 +157,13 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════ -->
-  <!-- ── RECENT UPDATE ACTIVITY – AG GRID ─────────────────────  -->
+  <!-- ── CLASS-WISE FEE STATUS – AG GRID ─────────────────────  -->
   <!-- ═══════════════════════════════════════════════════════════ -->
   <div class="rounded-2xl border border-[#f0f0f0] bg-white px-5 pt-[1.1rem] pb-5 shadow-[0_0.09vh_0.37vh_rgba(0,0,0,0.06)]">
     <div class="mb-3.5 flex items-start justify-between gap-4">
       <div>
-        <h3 class="m-0 text-[0.825rem] font-bold text-gray-800">Firmware Update Status by Port</h3>
-        <p class="mt-[0.15rem] text-[0.7rem] text-gray-400">Progress breakdown across all firmware ports</p>
+        <h3 class="m-0 text-[0.825rem] font-bold text-gray-800">Class-wise Fee Status</h3>
+        <p class="mt-[0.15rem] text-[0.7rem] text-gray-400">Fee collection breakdown across all classes</p>
       </div>
    <div class="flex shrink-0 gap-2">
         <button class="flex h-[38px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white p-2 text-red-500 transition-colors hover:bg-red-50 cursor-pointer" title="Export PDF" (click)="exportPdf()">
@@ -217,7 +184,7 @@
       <ag-grid-angular
         style="width:100%;height:60.78vh"
         [theme]="gridTheme.getTheme()"
-        [rowData]="portRowData()"
+        [rowData]="classRowData()"
         [columnDefs]="colDefs"
         [defaultColDef]="defaultColDef"
         [enableCellTextSelection]="true"
@@ -236,37 +203,37 @@
 
     <!-- Cards — mobile -->
     <div class="flex flex-col gap-3 md:hidden">
-      @for (p of pagedPorts(); track p.port) {
+      @for (c of pagedClasses(); track c.class) {
         <div class="rounded-xl border border-gray-100 bg-gray-50 p-3.5">
           <div class="flex items-center justify-between gap-3">
-            <span class="text-sm font-bold text-gray-900">Port {{ p.port }}</span>
-            <span class="text-xs font-bold text-indigo-600">{{ p.total ? (p.completed / p.total * 100 | number: '1.0-0') : 0 }}%</span>
+            <span class="text-sm font-bold text-gray-900">Class {{ c.class }}</span>
+            <span class="text-xs font-bold text-indigo-600">{{ c.totalStudents }} students</span>
           </div>
           <div class="mt-2.5 grid grid-cols-4 gap-2 text-center text-xs">
             <div>
               <div class="text-gray-400">Total</div>
-              <div class="mt-0.5 font-semibold text-gray-700">{{ p.total | number }}</div>
+              <div class="mt-0.5 font-semibold text-gray-700">{{ formatCurrency(c.totalFees) }}</div>
             </div>
             <div>
-              <div class="text-gray-400">Completed</div>
-              <div class="mt-0.5 font-semibold text-green-600">{{ p.completed | number }}</div>
+              <div class="text-gray-400">Collected</div>
+              <div class="mt-0.5 font-semibold text-green-600">{{ formatCurrency(c.collected) }}</div>
             </div>
             <div>
-              <div class="text-gray-400">In Progress</div>
-              <div class="mt-0.5 font-semibold text-blue-600">{{ p.inProgress | number }}</div>
+              <div class="text-gray-400">Pending</div>
+              <div class="mt-0.5 font-semibold text-amber-600">{{ formatCurrency(c.pending) }}</div>
             </div>
             <div>
-              <div class="text-gray-400">Disconnected</div>
-              <div class="mt-0.5 font-semibold text-red-600">{{ p.disconnected | number }}</div>
+              <div class="text-gray-400">Overdue</div>
+              <div class="mt-0.5 font-semibold text-red-600">{{ formatCurrency(c.overdue) }}</div>
             </div>
           </div>
         </div>
       } @empty {
         <div class="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-8 text-center">
-          <p class="m-0 text-sm font-semibold text-gray-500">No port data found</p>
+          <p class="m-0 text-sm font-semibold text-gray-500">No class data found</p>
         </div>
       }
-      <app-mobile-pagination [total]="portRowData().length" [page]="mobilePage()" (pageChange)="mobilePage.set($event)"/>
+      <app-mobile-pagination [total]="classRowData().length" [page]="mobilePage()" (pageChange)="onPageChange($event)"/>
     </div>
   </div>
 

@@ -145,7 +145,7 @@
   .status-offline  { background: #f1f5f9; color: #475569; }
   .status-updating { background: #dbeafe; color: #1e40af; }
   .status-error    { background: #fee2e2; color: #991b1b; }
-  .status-pending  { background: #fef3c7; color: #92400e; }
+  .status-pending  { background: #fee2e2; color: #991b1b; }
   .status-success  { background: #dcfce7; color: #166534; }
   .status-failed   { background: #fee2e2; color: #991b1b; }
   .status-cancelled{ background: #f1f5f9; color: #475569; }
@@ -154,3 +154,14 @@
   .status-draft    { background: #fef3c7; color: #92400e; }
   .status-published{ background: #dcfce7; color: #166534; }
   .status-deprecated{ background: #f1f5f9; color: #475569; }
+
+  /* Fee statuses */
+  .status-paid     { background: #dcfce7; color: #166534; }
+  .status-partial  { background: #fef3c7; color: #92400e; }
+  .status-overdue  { background: #fecaca; color: #7f1d1d; }
+
+  /* Attendance statuses */
+  .status-present    { background: #dcfce7; color: #166534; }
+  .status-absent     { background: #fee2e2; color: #991b1b; }
+  .status-late       { background: #fef3c7; color: #92400e; }
+  .status-not_marked { background: #f1f5f9; color: #475569; }

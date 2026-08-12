@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "fota": {
+    "student-fee-management": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -63,10 +63,10 @@
           },
           "configurations": {
             "production": {
-              "buildTarget": "fota:build:production"
+              "buildTarget": "student-fee-management:build:production"
             },
             "development": {
-              "buildTarget": "fota:build:development"
+              "buildTarget": "student-fee-management:build:development"
             }
           },
           "defaultConfiguration": "development"
