@@ -1,9 +1,0 @@
-/* ApexCharts overrides – prevent extra bottom whitespace (not expressible via Tailwind) */
-apx-chart {
-  display: block;
-  overflow: hidden;
-}
-
-apx-chart .apexcharts-canvas {
-  margin: 0 auto;
-}

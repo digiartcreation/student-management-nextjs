@@ -1,703 +1,152 @@
 <div class="flex flex-col gap-5">
 
-  <!-- ── Header & Filter Bar ────────────────────────────────────────────── -->
-  <div class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+  <!-- Header + controls -->
+  <div class="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h1 class="m-0 text-xl font-extrabold tracking-tight text-gray-900">Student Attendance</h1>
-        <p class="m-0 mt-0.5 text-xs text-gray-500 font-medium">Manage daily attendance and view student attendance records</p>
+        <h2 class="m-0 text-xl font-extrabold text-gray-900">Daily Attendance</h2>
+        <p class="mt-0.5 text-sm text-gray-500">Tick each student, then save the day</p>
       </div>
 
-      <!-- Controls Row -->
       <div class="flex flex-wrap items-center gap-2.5">
-        <!-- View Toggle -->
-        <div class="flex rounded-lg bg-gray-100 p-0.5 text-xs font-semibold">
-          <button
-            class="rounded-md px-3 py-1.5 transition cursor-pointer"
-            [class]="activeView() === 'daily' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
-            (click)="switchView('daily')">
-            Daily
-          </button>
-          <button
-            class="rounded-md px-3 py-1.5 transition cursor-pointer"
-            [class]="activeView() === 'monthly' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
-            (click)="switchView('monthly')">
-            Monthly
-          </button>
+        <div class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs">
+          <span class="font-semibold text-gray-500">Date</span>
+          <input type="date" [max]="today"
+            class="border-none bg-transparent text-xs font-semibold text-gray-800 outline-none cursor-pointer"
+            [ngModel]="date()" (ngModelChange)="date.set($event); load()"/>
         </div>
 
-        @if (activeView() === 'daily') {
-          <!-- Date Selector -->
-          <div class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs">
-            <span class="font-semibold text-gray-500">Date:</span>
-            <input
-              type="date"
-              class="border-none bg-transparent text-xs font-semibold text-gray-800 outline-none cursor-pointer"
-              [ngModel]="selectedDate()"
-              (ngModelChange)="selectedDate.set($event); onFilterChange()"/>
-          </div>
+        <select
+          class="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
+          [ngModel]="sectionId()" (ngModelChange)="sectionId.set($event); load()">
+          <option [ngValue]="''">All sections</option>
+          @for (section of sections(); track section.id) {
+            <option [ngValue]="section.id">{{ section.name }}</option>
+          }
+        </select>
 
-          <!-- Academic Year Selector -->
-          <select
-            class="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-            [ngModel]="selectedAcademicYearId()"
-            (ngModelChange)="selectedAcademicYearId.set(+$event); onFilterChange()">
-            @for (ay of academicYears(); track ay.id) {
-              <option [value]="ay.id">Year: {{ ay.name }}</option>
-            }
-          </select>
-
-          <!-- Class Selector -->
-          <select
-            class="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-            [ngModel]="selectedClassId()"
-            (ngModelChange)="selectedClassId.set(+$event); onClassChange()">
-            @for (c of classes(); track c.id) {
-              <option [value]="c.id">Class: {{ c.name }}</option>
-            }
-          </select>
-
-          <!-- Section Selector -->
-          <select
-            class="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-            [ngModel]="selectedSectionId()"
-            (ngModelChange)="selectedSectionId.set(+$event); onFilterChange()">
-            @for (s of sections(); track s.id) {
-              <option [value]="s.id">Section: {{ s.name }}</option>
-            }
-          </select>
-        }
-
-        <!-- Refresh Button -->
         <button
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-600 transition hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 cursor-pointer"
-          (click)="activeView() === 'daily' ? loadAttendanceData() : loadMonthlyData()"
-          title="Refresh Data">
-          <svg class="h-4 w-4" [class.animate-spin]="loading() || monthlyLoading()" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/>
-          </svg>
+          class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer"
+          (click)="load()">
+          Refresh
         </button>
       </div>
     </div>
 
-    <!-- ── Summary KPI Cards (Daily View) ─────────────────────────────── -->
-    @if (activeView() === 'daily') {
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 border-t border-gray-100 pt-4">
-        <!-- Total Students -->
-        <div class="flex items-center gap-3 rounded-xl bg-gray-50/80 border border-gray-100 p-3.5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="text-[0.7rem] font-bold tracking-wider text-gray-500 uppercase">Total Students</div>
-            <div class="text-lg font-black text-gray-900">{{ summary().totalStudents }}</div>
-          </div>
-        </div>
+    @if (isFuture()) {
+      <div class="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+        This date is in the future — attendance can only be filled up to today.
+      </div>
+    }
 
-        <!-- Present -->
-        <div class="flex items-center gap-3 rounded-xl bg-green-50/60 border border-green-100 p-3.5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-700">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="text-[0.7rem] font-bold tracking-wider text-green-700 uppercase">Present</div>
-            <div class="text-lg font-black text-green-800">{{ summary().present }}</div>
-          </div>
-        </div>
+    <!-- Summary strip -->
+    <div class="grid grid-cols-2 gap-3 border-t border-gray-100 pt-4 sm:grid-cols-3 md:grid-cols-5">
+      <div class="rounded-xl border border-gray-100 bg-gray-50/80 p-3">
+        <div class="text-[0.7rem] font-bold tracking-wider text-gray-500 uppercase">Students</div>
+        <div class="text-lg font-black text-gray-900">{{ summary().total }}</div>
+      </div>
+      <div class="rounded-xl border border-green-100 bg-green-50/60 p-3">
+        <div class="text-[0.7rem] font-bold tracking-wider text-green-700 uppercase">Present</div>
+        <div class="text-lg font-black text-green-800">{{ summary().present }}</div>
+      </div>
+      <div class="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+        <div class="text-[0.7rem] font-bold tracking-wider text-amber-700 uppercase">Late</div>
+        <div class="text-lg font-black text-amber-800">{{ summary().late }}</div>
+      </div>
+      <div class="rounded-xl border border-red-100 bg-red-50/60 p-3">
+        <div class="text-[0.7rem] font-bold tracking-wider text-red-700 uppercase">Absent</div>
+        <div class="text-lg font-black text-red-800">{{ summary().absent }}</div>
+      </div>
+      <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
+        <div class="text-[0.7rem] font-bold tracking-wider text-indigo-700 uppercase">Attendance</div>
+        <div class="text-lg font-black text-indigo-800">{{ summary().percentage }}%</div>
+      </div>
+    </div>
 
-        <!-- Absent -->
-        <div class="flex items-center gap-3 rounded-xl bg-red-50/60 border border-red-100 p-3.5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="text-[0.7rem] font-bold tracking-wider text-red-700 uppercase">Absent</div>
-            <div class="text-lg font-black text-red-800">{{ summary().absent }}</div>
-          </div>
-        </div>
+    <!-- Bulk actions + save -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold tracking-wider text-gray-400 uppercase">Mark all</span>
+        <button class="rounded-lg border border-green-200 bg-white px-3 py-1.5 text-xs font-bold text-green-700 hover:bg-green-50 cursor-pointer" (click)="markAll('PRESENT')">Present</button>
+        <button class="rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-700 hover:bg-amber-50 cursor-pointer" (click)="markAll('LATE')">Late</button>
+        <button class="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50 cursor-pointer" (click)="markAll('ABSENT')">Absent</button>
+      </div>
 
-        <!-- Late -->
-        <div class="flex items-center gap-3 rounded-xl bg-amber-50/60 border border-amber-100 p-3.5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="text-[0.7rem] font-bold tracking-wider text-amber-700 uppercase">Late</div>
-            <div class="text-lg font-black text-amber-800">{{ summary().late }}</div>
-          </div>
-        </div>
+      <div class="flex items-center gap-2">
+        @if (dirty()) {
+          <span class="text-xs font-semibold text-amber-600">Unsaved changes</span>
+          <button class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 cursor-pointer" (click)="reset()">Discard</button>
+        }
+        <button
+          class="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
+          [disabled]="saving() || isFuture() || !summary().marked"
+          (click)="save()">
+          {{ saving() ? 'Saving…' : 'Save Attendance' }}
+        </button>
+      </div>
+    </div>
+  </div>
 
-        <!-- Not Marked -->
-        <div class="flex items-center gap-3 rounded-xl bg-gray-50 border border-gray-200 p-3.5 col-span-2 sm:col-span-1">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-200 text-gray-600">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm0 5.25h.007v.008H3.75V12zm0 5.25h.007v.008H3.75v-.008z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="text-[0.7rem] font-bold tracking-wider text-gray-500 uppercase">Not Marked</div>
-            <div class="text-lg font-black text-gray-700">{{ summary().notMarked }}</div>
-          </div>
-        </div>
+  <!-- Roster -->
+  <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    @if (loading()) {
+      <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">Loading roster…</div>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 text-left text-[11px] font-bold tracking-wider text-gray-500 uppercase">
+              <th class="px-4 py-3">Roll No</th>
+              <th class="px-4 py-3">Student</th>
+              <th class="px-4 py-3">Section</th>
+              <th class="px-4 py-3 text-center">Mark</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Remarks</th>
+              <th class="px-4 py-3 text-right">Clear</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.studentId) {
+              <tr class="border-t border-gray-100 hover:bg-gray-50/60">
+                <td class="px-4 py-2.5 font-mono text-xs text-gray-600">{{ row.rollNo }}</td>
+                <td class="px-4 py-2.5 font-bold text-gray-900">{{ row.name }}</td>
+                <td class="px-4 py-2.5 text-gray-600">{{ row.sectionName }}</td>
+                <td class="px-4 py-2.5">
+                  <div class="flex justify-center gap-1.5">
+                    <button class="rounded-md border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
+                      [class]="buttonClass(row, 'PRESENT')" (click)="setStatus(row, 'PRESENT')">P</button>
+                    <button class="rounded-md border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
+                      [class]="buttonClass(row, 'LATE')" (click)="setStatus(row, 'LATE')">L</button>
+                    <button class="rounded-md border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
+                      [class]="buttonClass(row, 'ABSENT')" (click)="setStatus(row, 'ABSENT')">A</button>
+                  </div>
+                </td>
+                <td class="px-4 py-2.5">
+                  <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" [class]="statusClass(row.status)">
+                    {{ row.status === 'NOT_MARKED' ? 'Not marked' : (row.status | titlecase) }}
+                  </span>
+                </td>
+                <td class="px-4 py-2.5">
+                  <input type="text" placeholder="—"
+                    class="w-full max-w-[190px] rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs outline-none focus:border-indigo-500 focus:bg-white"
+                    [ngModel]="row.remarks" (ngModelChange)="setRemarks(row, $event)"/>
+                </td>
+                <td class="px-4 py-2.5 text-right">
+                  @if (row.status !== 'NOT_MARKED') {
+                    <button class="text-xs font-bold text-gray-500 hover:text-red-600 hover:underline cursor-pointer" (click)="clearRow(row)">Clear</button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="px-4 py-12 text-center text-sm font-semibold text-gray-400">
+                  No active students in this section
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     }
   </div>
-
-  <!-- ── Daily Attendance Main View ────────────────────────────────────── -->
-  @if (activeView() === 'daily') {
-    <div class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-
-      <!-- Status Tabs & Actions Bar -->
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-b border-gray-100 pb-4">
-        <!-- Status Tabs -->
-        <div class="flex flex-wrap gap-1.5">
-          <button
-            class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer"
-            [class]="activeStatusTab() === 'ALL' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-            (click)="activeStatusTab.set('ALL')">
-            <span>All</span>
-            <span class="rounded-full px-1.5 py-0.2 text-[10px]" [class]="activeStatusTab() === 'ALL' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'">{{ tableRows().length }}</span>
-          </button>
-          <button
-            class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer"
-            [class]="activeStatusTab() === 'PRESENT' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100'"
-            (click)="activeStatusTab.set('PRESENT')">
-            <span>Present</span>
-            <span class="rounded-full px-1.5 py-0.2 text-[10px]" [class]="activeStatusTab() === 'PRESENT' ? 'bg-white/25 text-white' : 'bg-green-100 text-green-800'">{{ bulkStats().present }}</span>
-          </button>
-          <button
-            class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer"
-            [class]="activeStatusTab() === 'ABSENT' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100'"
-            (click)="activeStatusTab.set('ABSENT')">
-            <span>Absent</span>
-            <span class="rounded-full px-1.5 py-0.2 text-[10px]" [class]="activeStatusTab() === 'ABSENT' ? 'bg-white/25 text-white' : 'bg-red-100 text-red-800'">{{ bulkStats().absent }}</span>
-          </button>
-          <button
-            class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer"
-            [class]="activeStatusTab() === 'LATE' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'"
-            (click)="activeStatusTab.set('LATE')">
-            <span>Late</span>
-            <span class="rounded-full px-1.5 py-0.2 text-[10px]" [class]="activeStatusTab() === 'LATE' ? 'bg-white/25 text-white' : 'bg-amber-100 text-amber-800'">{{ bulkStats().late }}</span>
-          </button>
-          <button
-            class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer"
-            [class]="activeStatusTab() === 'NOT_MARKED' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
-            (click)="activeStatusTab.set('NOT_MARKED')">
-            <span>Not Marked</span>
-            <span class="rounded-full px-1.5 py-0.2 text-[10px]" [class]="activeStatusTab() === 'NOT_MARKED' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-700'">{{ bulkStats().notMarked }}</span>
-          </button>
-        </div>
-
-        <!-- Quick Bulk Helpers & Save -->
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- Quick Mark buttons -->
-          <button
-            class="rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-bold text-green-700 hover:bg-green-100 transition cursor-pointer"
-            (click)="markAll('PRESENT')">
-            Mark All Present
-          </button>
-          <button
-            class="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition cursor-pointer"
-            (click)="markAll('ABSENT')">
-            Mark All Absent
-          </button>
-          <button
-            class="rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200 transition cursor-pointer"
-            (click)="markAll('NOT_MARKED')">
-            Reset
-          </button>
-
-          <!-- Save Bulk Button -->
-          <button
-            class="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 transition cursor-pointer"
-            (click)="openBulkConfirm()">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
-            </svg>
-            <span>Save Attendance</span>
-            @if (bulkStats().markedCount > 0) {
-              <span class="rounded-full bg-indigo-800 px-1.5 py-0.2 text-[10px]">{{ bulkStats().markedCount }}</span>
-            }
-          </button>
-        </div>
-      </div>
-
-      <!-- Search & Export Toolbar -->
-      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="relative max-w-xs flex-1">
-          <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search student name, ID..."
-            class="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-9 pr-3 text-xs text-gray-900 outline-none focus:border-indigo-500 focus:bg-white transition"
-            [ngModel]="search()"
-            (ngModelChange)="search.set($event)"/>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <button
-            class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
-            (click)="exportExcel()">
-            <svg class="h-3.5 w-3.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-            </svg>
-            <span>Excel</span>
-          </button>
-          <button
-            class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
-            (click)="exportPdf()">
-            <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-            </svg>
-            <span>PDF</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- ── AG Grid Table (Desktop) ─────────────────────────────────── -->
-      <div #gridWrapper class="hidden md:block w-full overflow-hidden rounded-xl border border-gray-200">
-        <ag-grid-angular
-          style="width: 100%; height: 500px;"
-          [theme]="gridTheme.getTheme()"
-          [rowData]="filteredRows()"
-          [columnDefs]="colDefs"
-          [defaultColDef]="defaultColDef"
-          [pagination]="true"
-          [paginationPageSize]="20"
-          (gridReady)="onGridReady($event)"
-          (rowDataUpdated)="onGridDataChanged()">
-        </ag-grid-angular>
-      </div>
-
-      <!-- ── Responsive Cards (Mobile) ───────────────────────────────── -->
-      <div class="flex flex-col gap-3 md:hidden">
-        @for (r of pagedRows(); track r.studentId) {
-          <div class="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <button
-                  class="text-left text-sm font-bold text-indigo-950 hover:text-indigo-600 cursor-pointer"
-                  (click)="openHistory(r)">
-                  {{ r.name }}
-                </button>
-                <div class="mt-0.5 text-xs text-gray-400">{{ r.studentCode }} • Class {{ r.classId }}-{{ r.sectionId }}</div>
-              </div>
-              <span
-                class="status-badge text-[11px]"
-                [class]="{
-                  'status-present': r.status === 'PRESENT',
-                  'status-absent': r.status === 'ABSENT',
-                  'status-late': r.status === 'LATE',
-                  'status-not_marked': r.status === 'NOT_MARKED'
-                }">
-                {{ r.status }}
-              </span>
-            </div>
-
-            <!-- Mobile Inline Status Selector -->
-            <div class="mt-3 grid grid-cols-4 gap-1.5">
-              <button
-                class="status-pill-btn present text-[11px]"
-                [class.active]="r.status === 'PRESENT'"
-                (click)="setRowStatus(r, 'PRESENT')">
-                Present
-              </button>
-              <button
-                class="status-pill-btn absent text-[11px]"
-                [class.active]="r.status === 'ABSENT'"
-                (click)="setRowStatus(r, 'ABSENT')">
-                Absent
-              </button>
-              <button
-                class="status-pill-btn late text-[11px]"
-                [class.active]="r.status === 'LATE'"
-                (click)="setRowStatus(r, 'LATE')">
-                Late
-              </button>
-              <button
-                class="status-pill-btn not_marked text-[11px]"
-                [class.active]="r.status === 'NOT_MARKED'"
-                (click)="setRowStatus(r, 'NOT_MARKED')">
-                Reset
-              </button>
-            </div>
-
-            <div class="mt-3 flex items-center justify-between border-t border-gray-100 pt-2.5 text-xs text-gray-500">
-              <div>
-                @if (r.status === 'PRESENT' || r.status === 'LATE') {
-                  <span>Arrival: <strong class="text-gray-800">{{ r.arrivalTime || '08:45' }}</strong></span>
-                  @if (r.lateMinutes > 0) {
-                    <span class="ml-2 text-amber-700">({{ r.lateMinutes }}m late)</span>
-                  }
-                } @else {
-                  <span>Arrival: —</span>
-                }
-              </div>
-              <div class="flex gap-2">
-                <button
-                  class="rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 hover:bg-indigo-100 cursor-pointer"
-                  (click)="openEditDrawer(r)">
-                  Details
-                </button>
-                <button
-                  class="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-700 hover:bg-gray-200 cursor-pointer"
-                  (click)="openHistory(r)">
-                  History
-                </button>
-              </div>
-            </div>
-          </div>
-        } @empty {
-          <div class="flex flex-col items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-8 text-center">
-            <p class="m-0 text-sm font-semibold text-gray-500">No students found for this class and section.</p>
-          </div>
-        }
-        <app-mobile-pagination [total]="filteredRows().length" [page]="mobilePage()" (pageChange)="mobilePage.set($event)"/>
-      </div>
-
-    </div>
-  }
-
-  <!-- ── Monthly Attendance View ──────────────────────────────────────── -->
-  @if (activeView() === 'monthly') {
-    <div class="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-4">
-        <div>
-          <h2 class="m-0 text-base font-bold text-gray-900">Monthly Attendance Report</h2>
-          <p class="m-0 text-xs text-gray-500">Review monthly attendance logs and trends</p>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <select
-            class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none cursor-pointer"
-            [ngModel]="selectedMonth()"
-            (ngModelChange)="selectedMonth.set(+$event); loadMonthlyData()">
-            @for (m of months; track m.value) {
-              <option [value]="m.value">{{ m.name }}</option>
-            }
-          </select>
-
-          <input
-            type="number"
-            class="w-24 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 outline-none"
-            [ngModel]="selectedYear()"
-            (ngModelChange)="selectedYear.set(+$event); loadMonthlyData()"/>
-        </div>
-      </div>
-
-      <!-- Monthly Records Table -->
-      <div class="overflow-x-auto rounded-xl border border-gray-100">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-gray-50 text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-            <tr>
-              <th class="px-4 py-3">Date</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Arrival Time</th>
-              <th class="px-4 py-3">Late Minutes</th>
-              <th class="px-4 py-3">Remarks</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 font-medium text-gray-700">
-            @for (m of monthlyRecords(); track m.date) {
-              <tr class="hover:bg-gray-50/50">
-                <td class="px-4 py-3 font-semibold text-gray-900">{{ m.date }}</td>
-                <td class="px-4 py-3">
-                  <span
-                    class="status-badge"
-                    [class]="{
-                      'status-present': m.status === 'PRESENT',
-                      'status-absent': m.status === 'ABSENT',
-                      'status-late': m.status === 'LATE',
-                      'status-not_marked': m.status === 'NOT_MARKED'
-                    }">
-                    {{ m.status }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">{{ m.arrivalTime || '—' }}</td>
-                <td class="px-4 py-3">{{ m.lateMinutes ? m.lateMinutes + ' min' : '0' }}</td>
-                <td class="px-4 py-3 text-gray-500">{{ m.remarks || '—' }}</td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="py-8 text-center text-gray-400 font-medium">No attendance records found for this month</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-    </div>
-  }
-
 </div>
-
-<!-- ── Single Mark / Edit Attendance Drawer ──────────────────────────── -->
-@if (showDrawer()) {
-  <div class="fixed inset-0 z-[100] flex items-start justify-end bg-black/40" (click)="closeDrawer()">
-    <div class="flex h-full w-full max-w-[440px] flex-col bg-white shadow-[-8px_0_30px_rgba(0,0,0,0.15)] animate-slide-in" (click)="$event.stopPropagation()">
-      <div class="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4">
-        <h3 class="m-0 text-[1.05rem] font-bold text-gray-900">
-          {{ drawerMode() === 'edit' ? 'Edit Attendance' : 'Mark Attendance' }}
-        </h3>
-        <button class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 cursor-pointer" (click)="closeDrawer()">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      @if (drawerRow(); as row) {
-        <div class="flex-1 overflow-y-auto px-6 py-5">
-          <div class="flex flex-col gap-4">
-            <!-- Student Header Badge -->
-            <div class="rounded-xl bg-indigo-50/70 border border-indigo-100 p-4">
-              <div class="text-sm font-extrabold text-indigo-950">{{ row.name }}</div>
-              <div class="mt-0.5 text-xs text-indigo-600">
-                {{ row.studentCode }} • Class {{ row.classId }}-{{ row.sectionId }} • Date: {{ selectedDate() }}
-              </div>
-            </div>
-
-            <!-- Status Selector -->
-            <div class="flex flex-col gap-1.5">
-              <label class="text-xs font-bold text-gray-700">Attendance Status *</label>
-              <div class="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  class="status-pill-btn present"
-                  [class.active]="drawerStatus() === 'PRESENT'"
-                  (click)="onDrawerStatusChange('PRESENT')">
-                  Present
-                </button>
-                <button
-                  type="button"
-                  class="status-pill-btn absent"
-                  [class.active]="drawerStatus() === 'ABSENT'"
-                  (click)="onDrawerStatusChange('ABSENT')">
-                  Absent
-                </button>
-                <button
-                  type="button"
-                  class="status-pill-btn late"
-                  [class.active]="drawerStatus() === 'LATE'"
-                  (click)="onDrawerStatusChange('LATE')">
-                  Late
-                </button>
-              </div>
-            </div>
-
-            <!-- Arrival Time (Enabled for Present and Late, disabled for Absent) -->
-            @if (drawerStatus() !== 'ABSENT') {
-              <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-700">Arrival Time</label>
-                <input
-                  type="time"
-                  class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-                  [ngModel]="drawerArrivalTime()"
-                  (ngModelChange)="drawerArrivalTime.set($event)"/>
-                <p class="m-0 text-[11px] text-gray-400">Late minutes will be calculated automatically by the backend</p>
-              </div>
-            }
-
-            <!-- Remarks -->
-            <div class="flex flex-col gap-1">
-              <label class="text-xs font-bold text-gray-700">Remarks</label>
-              <textarea
-                class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-                rows="3"
-                placeholder="Optional notes (e.g. medical leave, traffic, etc.)"
-                [ngModel]="drawerRemarks()"
-                (ngModelChange)="drawerRemarks.set($event)"></textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex shrink-0 justify-end gap-3 border-t border-gray-100 px-6 py-4">
-          <button
-            type="button"
-            class="rounded-lg bg-gray-200 px-5 py-2 text-sm font-bold text-gray-700 transition hover:bg-gray-300 cursor-pointer"
-            (click)="closeDrawer()">
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
-            [disabled]="drawerSaving()"
-            (click)="saveSingleAttendance()">
-            @if (drawerSaving()) {
-              <svg class="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>Saving...</span>
-            } @else {
-              <span>Save Attendance</span>
-            }
-          </button>
-        </div>
-      }
-    </div>
-  </div>
-}
-
-<!-- ── Bulk Save Confirmation Modal ─────────────────────────────────── -->
-@if (showBulkConfirm()) {
-  <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 p-4" (click)="closeBulkConfirm()">
-    <div class="flex w-full max-w-[420px] flex-col rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
-      <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-      </div>
-
-      <h3 class="m-0 text-lg font-bold text-gray-900">Confirm Bulk Attendance</h3>
-      <p class="mt-1 text-xs text-gray-500">
-        Save attendance for <strong>{{ bulkStats().markedCount }} students</strong> on <strong>{{ selectedDate() }}</strong>?
-      </p>
-
-      <div class="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-gray-50 p-3 text-center">
-        <div>
-          <div class="text-[11px] font-bold text-green-700 uppercase">Present</div>
-          <div class="text-base font-black text-green-800">{{ bulkStats().present }}</div>
-        </div>
-        <div>
-          <div class="text-[11px] font-bold text-red-700 uppercase">Absent</div>
-          <div class="text-base font-black text-red-800">{{ bulkStats().absent }}</div>
-        </div>
-        <div>
-          <div class="text-[11px] font-bold text-amber-700 uppercase">Late</div>
-          <div class="text-base font-black text-amber-800">{{ bulkStats().late }}</div>
-        </div>
-      </div>
-
-      @if (bulkStats().notMarked > 0) {
-        <p class="mt-3 text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2 font-medium">
-          Note: {{ bulkStats().notMarked }} un-marked students will not be saved.
-        </p>
-      }
-
-      <div class="mt-5 flex justify-end gap-3">
-        <button
-          type="button"
-          class="rounded-lg bg-gray-200 px-5 py-2 text-xs font-bold text-gray-700 transition hover:bg-gray-300 cursor-pointer"
-          [disabled]="savingBulk()"
-          (click)="closeBulkConfirm()">
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50 cursor-pointer"
-          [disabled]="savingBulk()"
-          (click)="executeBulkSave()">
-          @if (savingBulk()) {
-            <svg class="h-3.5 w-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>Saving Attendance...</span>
-          } @else {
-            <span>Save Attendance</span>
-          }
-        </button>
-      </div>
-    </div>
-  </div>
-}
-
-<!-- ── Student Attendance History Modal ──────────────────────────────── -->
-@if (showHistoryModal()) {
-  <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 p-4" (click)="closeHistoryModal()">
-    <div class="flex w-full max-w-[620px] max-h-[90vh] flex-col rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
-      <div class="flex items-start justify-between border-b border-gray-100 pb-4">
-        <div>
-          <h3 class="m-0 text-lg font-bold text-gray-900">{{ historyStudent()?.name }}</h3>
-          <p class="m-0 text-xs text-gray-500 font-medium">Student ID: {{ historyStudent()?.studentCode }} • Class {{ historyStudent()?.classId }}-{{ historyStudent()?.sectionId }}</p>
-        </div>
-        <button class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 cursor-pointer" (click)="closeHistoryModal()">
-          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-
-      <!-- History KPI Metrics -->
-      @if (historySummary(); as hs) {
-        <div class="grid grid-cols-4 gap-2.5 py-4">
-          <div class="rounded-xl bg-indigo-50 p-3 text-center">
-            <div class="text-[10px] font-bold text-indigo-700 uppercase">Attendance %</div>
-            <div class="text-base font-black text-indigo-900">{{ hs.attendancePercentage }}%</div>
-          </div>
-          <div class="rounded-xl bg-green-50 p-3 text-center">
-            <div class="text-[10px] font-bold text-green-700 uppercase">Present</div>
-            <div class="text-base font-black text-green-800">{{ hs.presentDays }}</div>
-          </div>
-          <div class="rounded-xl bg-red-50 p-3 text-center">
-            <div class="text-[10px] font-bold text-red-700 uppercase">Absent</div>
-            <div class="text-base font-black text-red-800">{{ hs.absentDays }}</div>
-          </div>
-          <div class="rounded-xl bg-amber-50 p-3 text-center">
-            <div class="text-[10px] font-bold text-amber-700 uppercase">Late</div>
-            <div class="text-base font-black text-amber-800">{{ hs.lateDays }}</div>
-          </div>
-        </div>
-      }
-
-      <!-- History Records Table -->
-      <div class="flex-1 overflow-y-auto rounded-xl border border-gray-100 max-h-[320px]">
-        <table class="w-full text-left text-xs">
-          <thead class="sticky top-0 bg-gray-50 text-[11px] font-bold text-gray-500 uppercase">
-            <tr>
-              <th class="px-3 py-2.5">Date</th>
-              <th class="px-3 py-2.5">Status</th>
-              <th class="px-3 py-2.5">Arrival</th>
-              <th class="px-3 py-2.5">Late</th>
-              <th class="px-3 py-2.5">Remarks</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 font-medium text-gray-700">
-            @for (rec of historyRecords(); track rec.id || rec.attendanceDate) {
-              <tr class="hover:bg-gray-50/50">
-                <td class="px-3 py-2.5 font-semibold text-gray-900">{{ rec.attendanceDate }}</td>
-                <td class="px-3 py-2.5">
-                  <span
-                    class="status-badge text-[10px] px-2 py-0.5"
-                    [class]="{
-                      'status-present': rec.status === 'PRESENT',
-                      'status-absent': rec.status === 'ABSENT',
-                      'status-late': rec.status === 'LATE'
-                    }">
-                    {{ rec.status }}
-                  </span>
-                </td>
-                <td class="px-3 py-2.5">{{ rec.arrivalTime || '—' }}</td>
-                <td class="px-3 py-2.5">{{ rec.lateMinutes ? rec.lateMinutes + 'm' : '0' }}</td>
-                <td class="px-3 py-2.5 text-gray-500">{{ rec.remarks || '—' }}</td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="5" class="py-6 text-center text-gray-400 font-medium">No attendance records found for this student</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
-
-      <div class="mt-5 flex justify-end">
-        <button
-          type="button"
-          class="rounded-lg bg-gray-200 px-5 py-2 text-xs font-bold text-gray-700 hover:bg-gray-300 cursor-pointer"
-          (click)="closeHistoryModal()">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-}

@@ -1,257 +1,406 @@
-import { Component, OnInit, inject, signal, computed, ElementRef, ViewChild, HostListener } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AgGridAngular } from 'ag-grid-angular';
-import type { ColDef, GridReadyEvent, GridApi } from 'ag-grid-community';
-import { GridThemeService } from '../../service/themeing/grid-theme.service';
-import { FeeRecord, PaymentMethod } from '../../core/models/student.models';
-import { AjaxService } from '../../service/themeing/network/ajax-service.service';
+import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../shared/toast/toast.service';
-import { API_BASE_URL } from '../../environments/environment';
-import { ExcelExportService } from '../../service/themeing/export/excel-export.service';
-import { PdfExportService } from '../../service/themeing/export/pdf-export.service';
-import { MobilePagination, paginate } from '../../shared/mobile-pagination/mobile-pagination';
-import { fitColumns } from '../../shared/grid/fit-columns';
-import { getDisplayedRows } from '../../shared/grid/get-displayed-rows';
+import { ConfirmDialog } from '../../shared/confirm-dialog/confirm-dialog';
+import { apiErrorMessage } from '../../core/utils/api-envelope';
+import {
+  FEE_TYPES,
+  FEE_TYPE_LABELS,
+  Fee,
+  FeeTotals,
+  FeeType,
+  Student,
+} from '../../core/models/app.models';
+
+const currentMonth = () => new Date().toISOString().slice(0, 7);
+const currentYear = () => new Date().getFullYear();
+const currentQuarter = () => Math.floor(new Date().getMonth() / 3) + 1;
+
+const emptyTotals = (): FeeTotals => ({
+  total: '0.00',
+  collected: '0.00',
+  pending: '0.00',
+  paidCount: 0,
+  unpaidCount: 0,
+  byType: {
+    MONTHLY: { count: 0, total: '0.00' },
+    QUARTERLY: { count: 0, total: '0.00' },
+    YEARLY: { count: 0, total: '0.00' },
+    OTHER: { count: 0, total: '0.00' },
+  },
+});
+
+/**
+ * A period is spelled differently per fee type, so the form keeps the parts
+ * separate — a month input, a year box, a quarter picker — and only joins them
+ * into the key the API wants at submit time.
+ */
+interface PeriodParts {
+  feeType: FeeType;
+  month: string;
+  year: number;
+  quarter: number;
+  title: string;
+}
+
+const emptyPeriod = (): PeriodParts => ({
+  feeType: 'MONTHLY',
+  month: currentMonth(),
+  year: currentYear(),
+  quarter: currentQuarter(),
+  title: '',
+});
 
 @Component({
   selector: 'app-fees',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridAngular, MobilePagination],
+  imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './fees.component.html',
-  styleUrl: './fees.component.css',
 })
 export class FeesComponent implements OnInit {
-  public gridTheme = inject(GridThemeService);
-  private gridApi?: GridApi;
-  @ViewChild('gridWrapper') private gridWrapper?: ElementRef<HTMLDivElement>;
-  private ajax = inject(AjaxService);
+  private data = inject(DataService);
   private toast = inject(ToastService);
-  private excelExport = inject(ExcelExportService);
-  private pdfExport = inject(PdfExportService);
 
-  loading = signal(false);
-  activeTab = signal<string>('all');
+  readonly feeTypes = FEE_TYPES;
+  readonly typeLabels = FEE_TYPE_LABELS;
+
+  sections = this.data.sections;
+  students = signal<Student[]>([]);
+  months = signal<string[]>([]);
+
+  // ── Filters ───────────────────────────────────────────────────────────────
+  month = signal(currentMonth());
+  typeFilter = signal<FeeType | ''>('');
+  sectionId = signal<number | ''>('');
+  paidFilter = signal<'' | 'true' | 'false'>('');
   search = signal('');
-  fees = signal<FeeRecord[]>([]);
-  mobilePage = signal(1);
 
-  // Payment drawer state
-  showPayment = signal(false);
-  selectedFee = signal<FeeRecord | null>(null);
-  paymentAmount = 0;
-  paymentDate = '';
-  paymentMethod: PaymentMethod = 'Cash';
-  transactionRef = '';
-  paymentNotes = '';
+  fees = signal<Fee[]>([]);
+  totals = signal<FeeTotals>(emptyTotals());
+  loading = signal(false);
 
-  // Receipt dialog state
-  showReceipt = signal(false);
-  receiptFee = signal<FeeRecord | null>(null);
+  // ── Add a single fee ──────────────────────────────────────────────────────
+  showEntry = signal(false);
+  saving = signal(false);
+  entryForm: PeriodParts & { sectionId: number | ''; studentId: number | ''; amount: number } = {
+    ...emptyPeriod(),
+    sectionId: '',
+    studentId: '',
+    amount: 1500,
+  };
 
-  tabs = [
-    { key: 'all', label: 'All' },
-    { key: 'paid', label: 'Paid' },
-    { key: 'partial', label: 'Partial' },
-    { key: 'pending', label: 'Pending' },
-    { key: 'overdue', label: 'Overdue' },
-  ];
+  // ── Generate for everyone ─────────────────────────────────────────────────
+  showGenerate = signal(false);
+  generating = signal(false);
+  generateForm: PeriodParts & { sectionId: number | ''; amount: number; overwriteUnpaid: boolean } = {
+    ...emptyPeriod(),
+    sectionId: '',
+    amount: 1500,
+    overwriteUnpaid: false,
+  };
 
-  filteredFees = computed(() => {
-    const q = this.search().toLowerCase().trim();
-    const list = this.fees();
-    if (!q) return list;
-    return list.filter(f =>
-      f.student?.name?.toLowerCase().includes(q) ||
-      f.student?.studentId?.toLowerCase().includes(q) ||
-      f.receiptNo?.toLowerCase().includes(q) ||
-      String(f.student?.classId).includes(q) ||
-      String(f.feeTypeId).includes(q)
+  // ── Inline amount edit ────────────────────────────────────────────────────
+  editingId = signal<number | null>(null);
+  editAmount = 0;
+
+  pendingDelete = signal<Fee | null>(null);
+  deleting = signal(false);
+
+  visible = computed(() => {
+    const query = this.search().toLowerCase().trim();
+    if (!query) return this.fees();
+    return this.fees().filter(
+      (fee) =>
+        (fee.student?.name ?? '').toLowerCase().includes(query) ||
+        (fee.student?.rollNo ?? '').toLowerCase().includes(query),
     );
   });
 
-  pagedFees = computed(() => paginate(this.filteredFees(), this.mobilePage()));
+  /** Students the entry form can pick from, narrowed by the section chosen in it. */
+  entryStudents = computed(() => {
+    const section = this.entryForm.sectionId;
+    const list = this.students();
+    return section === '' ? list : list.filter((student) => student.sectionId === Number(section));
+  });
 
-  defaultColDef: ColDef = { sortable: true, filter: false, resizable: true };
+  /** Roll no and section for the student picked in the entry form. */
+  pickedStudent = computed(() =>
+    this.students().find((student) => student.id === Number(this.entryForm.studentId)),
+  );
 
-  colDefs: ColDef<FeeRecord>[] = [
-    { field: 'receiptNo', headerName: 'Receipt No', width: 130 },
-    {
-      headerName: 'Student', minWidth: 160,
-      valueGetter: (p: any) => p.data?.student?.name ?? '',
-    },
-    {
-      headerName: 'Class ID', width: 90,
-      valueGetter: (p: any) => p.data?.student?.classId ?? '',
-    },
-    { field: 'academicYearId', headerName: 'Year ID', width: 90 },
-    { field: 'feeTypeId', headerName: 'Fee Type ID', width: 110 },
-    {
-      field: 'totalFee', headerName: 'Total Fee', width: 110,
-      cellRenderer: (p: any) => `<span style="font-weight:600">₹${(p.value ?? 0).toLocaleString('en-IN')}</span>`,
-    },
-    {
-      field: 'paid', headerName: 'Paid', width: 100,
-      cellRenderer: (p: any) => `<span style="color:#059669;font-weight:600">₹${(p.value ?? 0).toLocaleString('en-IN')}</span>`,
-    },
-    {
-      field: 'balance', headerName: 'Balance', width: 100,
-      cellRenderer: (p: any) => {
-        const val = p.value ?? 0;
-        const color = val > 0 ? '#dc2626' : '#059669';
-        return `<span style="color:${color};font-weight:600">₹${val.toLocaleString('en-IN')}</span>`;
-      },
-    },
-    { field: 'dueDate', headerName: 'Due Date', width: 110 },
-    {
-      field: 'status', headerName: 'Status', width: 100,
-      cellRenderer: (p: any) => {
-        const s = (p.value ?? '').toUpperCase();
-        const colors: Record<string, { bg: string; fg: string }> = {
-          PAID: { bg: '#dcfce7', fg: '#166534' },
-          PARTIAL: { bg: '#fef3c7', fg: '#92400e' },
-          PENDING: { bg: '#fee2e2', fg: '#991b1b' },
-          OVERDUE: { bg: '#fecaca', fg: '#7f1d1d' },
-        };
-        const c = colors[s] ?? { bg: '#f1f5f9', fg: '#475569' };
-        return `<span style="background:${c.bg};color:${c.fg};padding:4px 12px;border-radius:9999px;font-size:11px;font-weight:600">${s}</span>`;
-      },
-    },
-    {
-      headerName: 'Actions', width: 120, sortable: false,
-      cellRenderer: () => {
-        return `<div style="display:flex;gap:6px;align-items:center;height:100%">
-          <button data-action="pay" style="border:none;background:#e0e7ff;color:#4f46e5;border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px;font-weight:600">Pay</button>
-          <button data-action="receipt" style="border:none;background:#dcfce7;color:#166534;border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px;font-weight:600">Receipt</button>
-        </div>`;
-      },
-      onCellClicked: (e: any) => {
-        const action = (e.event?.target as HTMLElement)?.closest('[data-action]')?.getAttribute('data-action');
-        if (action === 'pay') this.openPayment(e.data);
-        if (action === 'receipt') this.openReceipt(e.data);
-      },
-    },
-  ];
+  ngOnInit() {
+    this.data.loadSections().subscribe({ error: () => undefined });
+    this.loadStudents();
+    this.loadMonths();
+    this.load();
+  }
 
-  ngOnInit() { this.loadFees(); }
+  loadStudents() {
+    this.data.listStudents({ status: 'ACTIVE' }).subscribe({
+      next: (list) => this.students.set(list),
+      error: () => this.students.set([]),
+    });
+  }
 
-  loadFees() {
+  loadMonths() {
+    this.data.feeMonths().subscribe({
+      next: (list) => this.months.set(list),
+      error: () => this.months.set([]),
+    });
+  }
+
+  load() {
     this.loading.set(true);
-    let url = `${API_BASE_URL}/fees`;
-    const tab = this.activeTab();
-    if (tab !== 'all') {
-      url = `${API_BASE_URL}/fees/${tab}`;
+    this.data
+      .listFees({
+        billedMonth: this.month(),
+        feeType: this.typeFilter() === '' ? undefined : (this.typeFilter() as FeeType),
+        sectionId: this.sectionId() === '' ? undefined : Number(this.sectionId()),
+        paid: this.paidFilter() === '' ? undefined : this.paidFilter() === 'true',
+      })
+      .subscribe({
+        next: (page) => {
+          this.fees.set(page?.content ?? []);
+          this.totals.set(page?.totals ?? emptyTotals());
+          this.loading.set(false);
+        },
+        error: (err) => {
+          this.loading.set(false);
+          this.toast.error(apiErrorMessage(err, 'Failed to load fees'));
+        },
+      });
+  }
+
+  money(value: string | number | null | undefined): string {
+    if (value === null || value === undefined || value === '') return '—';
+    return '₹' + Number(value).toLocaleString('en-IN', { maximumFractionDigits: 2 });
+  }
+
+  /** How a fee reads in the table: the period, or the charge's name for a one-off. */
+  label(fee: Fee): string {
+    return fee.feeType === 'OTHER' && fee.title ? `${fee.title} · ${fee.period}` : fee.period;
+  }
+
+  typeClass(feeType: FeeType): string {
+    return {
+      MONTHLY: 'bg-indigo-100 text-indigo-700',
+      QUARTERLY: 'bg-sky-100 text-sky-700',
+      YEARLY: 'bg-violet-100 text-violet-700',
+      OTHER: 'bg-amber-100 text-amber-700',
+    }[feeType];
+  }
+
+  /**
+   * Joins the form's period parts into the key the API stores. Returns null when
+   * the parts do not make a period, so the caller can refuse to submit.
+   */
+  private periodOf(form: PeriodParts): string | null {
+    const year = Number(form.year);
+    if (form.feeType === 'MONTHLY' || form.feeType === 'OTHER') {
+      return /^\d{4}-(0[1-9]|1[0-2])$/.test(form.month) ? form.month : null;
     }
-
-    this.ajax.ajaxget(url).subscribe({
-      next: (res) => {
-        this.fees.set(res?.data ?? []);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.toast.error('Failed to load fees');
-      },
-    });
-  }
-
-  onTabChange(tab: string) {
-    this.activeTab.set(tab);
-    this.mobilePage.set(1);
-    this.loadFees();
-  }
-
-  onGridReady(e: GridReadyEvent) { this.gridApi = e.api; }
-  onGridDataChanged() { fitColumns(this.gridApi, this.gridWrapper?.nativeElement); }
-  @HostListener('window:resize') onWindowResize() { fitColumns(this.gridApi, this.gridWrapper?.nativeElement); }
-
-  // ── Payment Drawer ─────────────────────────────────────
-  openPayment(fee: FeeRecord) {
-    this.selectedFee.set(fee);
-    this.paymentAmount = 0;
-    this.paymentDate = new Date().toISOString().slice(0, 10);
-    this.paymentMethod = 'Cash';
-    this.transactionRef = '';
-    this.paymentNotes = '';
-    this.showPayment.set(true);
-  }
-
-  closePayment() {
-    this.showPayment.set(false);
-    this.selectedFee.set(null);
-  }
-
-  recordPayment() {
-    const fee = this.selectedFee();
-    if (!fee || this.paymentAmount <= 0) {
-      this.toast.error('Please enter a valid payment amount');
-      return;
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) return null;
+    if (form.feeType === 'QUARTERLY') {
+      const quarter = Number(form.quarter);
+      return quarter >= 1 && quarter <= 4 ? `${year}-Q${quarter}` : null;
     }
-    if (this.paymentAmount > fee.balance) {
-      this.toast.error('Payment amount cannot exceed balance');
-      return;
-    }
+    return String(year);
+  }
 
-    const payload = {
-      studentId: fee.student.id,
-      installmentId: fee.id,
-      amount: this.paymentAmount,
-      paymentDate: this.paymentDate,
-      paymentMethod: this.paymentMethod,
-      transactionReference: this.transactionRef,
-      notes: this.paymentNotes,
+  /** Shared checks for both dialogs; returns the period or reports why not. */
+  private validate(form: PeriodParts, amount: number): string | null {
+    const period = this.periodOf(form);
+    if (!period) {
+      this.toast.error('Pick a valid period for this fee type');
+      return null;
+    }
+    if (form.feeType === 'OTHER' && !form.title.trim()) {
+      this.toast.error('Name the charge, e.g. Bus fee');
+      return null;
+    }
+    if (!(amount > 0)) {
+      this.toast.error('Amount must be greater than zero');
+      return null;
+    }
+    return period;
+  }
+
+  // ── Add a single fee ──────────────────────────────────────────────────────
+  openEntry() {
+    this.entryForm = {
+      ...emptyPeriod(),
+      feeType: this.typeFilter() === '' ? 'MONTHLY' : (this.typeFilter() as FeeType),
+      month: this.month(),
+      sectionId: this.sectionId(),
+      studentId: '',
+      amount: 1500,
     };
+    this.showEntry.set(true);
+  }
 
-    this.ajax.ajaxPostWithBody(`${API_BASE_URL}/payments`, payload).subscribe({
+  closeEntry() {
+    this.showEntry.set(false);
+  }
+
+  /** Clears the picked student, since the section change may have excluded them. */
+  onEntrySectionChange() {
+    this.entryForm.studentId = '';
+  }
+
+  saveEntry() {
+    const form = this.entryForm;
+    if (form.studentId === '') {
+      this.toast.error('Pick a student');
+      return;
+    }
+    const period = this.validate(form, form.amount);
+    if (!period) return;
+
+    this.saving.set(true);
+    this.data
+      .createFee({
+        studentId: Number(form.studentId),
+        feeType: form.feeType,
+        period,
+        title: form.feeType === 'OTHER' ? form.title.trim() : undefined,
+        amount: form.amount,
+      })
+      .subscribe({
+        next: (fee) => {
+          this.saving.set(false);
+          this.showEntry.set(false);
+          this.toast.success(`Fee added for ${fee.student?.name ?? 'the student'}`);
+          // Jump the list to where the new row actually landed.
+          this.month.set(fee.billedMonth);
+          this.loadMonths();
+          this.load();
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.toast.error(apiErrorMessage(err, 'Failed to add the fee'));
+        },
+      });
+  }
+
+  // ── Generate for everyone ─────────────────────────────────────────────────
+  openGenerate() {
+    this.generateForm = {
+      ...emptyPeriod(),
+      feeType: this.typeFilter() === '' ? 'MONTHLY' : (this.typeFilter() as FeeType),
+      month: this.month(),
+      sectionId: this.sectionId(),
+      amount: 1500,
+      overwriteUnpaid: false,
+    };
+    this.showGenerate.set(true);
+  }
+
+  closeGenerate() {
+    this.showGenerate.set(false);
+  }
+
+  generate() {
+    const form = this.generateForm;
+    const period = this.validate(form, form.amount);
+    if (!period) return;
+
+    this.generating.set(true);
+    this.data
+      .generateFees({
+        feeType: form.feeType,
+        period,
+        title: form.feeType === 'OTHER' ? form.title.trim() : undefined,
+        amount: form.amount,
+        sectionId: form.sectionId === '' ? undefined : Number(form.sectionId),
+        overwriteUnpaid: form.overwriteUnpaid,
+      })
+      .subscribe({
+        next: (result) => {
+          this.generating.set(false);
+          this.showGenerate.set(false);
+          this.toast.success(
+            `${result.created} created` +
+              (result.repriced ? `, ${result.repriced} repriced` : '') +
+              (result.skipped ? `, ${result.skipped} already billed` : ''),
+          );
+          this.loadMonths();
+          this.load();
+        },
+        error: (err) => {
+          this.generating.set(false);
+          this.toast.error(apiErrorMessage(err, 'Failed to generate the fees'));
+        },
+      });
+  }
+
+  // ── Paid toggle ───────────────────────────────────────────────────────────
+  togglePaid(fee: Fee) {
+    this.data.setFeePaid(fee.id, !fee.paid).subscribe({
       next: () => {
-        this.toast.success('Payment recorded successfully');
-        this.closePayment();
-        this.loadFees();
+        this.toast.success(`${fee.student?.name ?? 'Fee'} marked ${!fee.paid ? 'paid' : 'unpaid'}`);
+        this.load();
       },
-      error: () => this.toast.error('Failed to record payment'),
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Failed to update the fee')),
     });
   }
 
-  // ── Receipt Dialog ─────────────────────────────────────
-  openReceipt(fee: FeeRecord) {
-    this.receiptFee.set(fee);
-    this.showReceipt.set(true);
+  // ── Inline amount edit ────────────────────────────────────────────────────
+  startEdit(fee: Fee) {
+    this.editingId.set(fee.id);
+    this.editAmount = Number(fee.amount);
   }
 
-  closeReceipt() {
-    this.showReceipt.set(false);
-    this.receiptFee.set(null);
+  cancelEdit() {
+    this.editingId.set(null);
   }
 
-  formatCurrency(value: number): string {
-    return '₹' + value.toLocaleString('en-IN');
+  saveEdit(fee: Fee) {
+    if (!(this.editAmount > 0)) {
+      this.toast.error('Amount must be greater than zero');
+      return;
+    }
+    this.data.updateFee(fee.id, this.editAmount).subscribe({
+      next: () => {
+        this.editingId.set(null);
+        this.toast.success('Amount updated');
+        this.load();
+      },
+      error: (err) => this.toast.error(apiErrorMessage(err, 'Failed to update the amount')),
+    });
   }
 
-  // ── Exports ──────────────────────────────────────────────
-  private exportRows() {
-    return getDisplayedRows(this.gridApi, this.filteredFees()).map(f => ({
-      'Receipt No': f.receiptNo,
-      'Student': f.student?.name,
-      'Class ID': f.student?.classId,
-      'Year ID': f.academicYearId,
-      'Fee Type ID': f.feeTypeId,
-      'Total Fee': f.totalFee,
-      'Paid': f.paid,
-      'Balance': f.balance,
-      'Due Date': f.dueDate,
-      'Status': f.status,
-    }));
+  // ── Delete ────────────────────────────────────────────────────────────────
+  askDelete(fee: Fee) {
+    this.pendingDelete.set(fee);
   }
 
-  exportPdf() {
-    const rows = this.exportRows();
-    if (!rows.length) { this.toast.error('No data to export'); return; }
-    this.pdfExport.generatePdf(rows, String(rows.length), 'Fee Records', 'Total Records:');
+  cancelDelete() {
+    this.pendingDelete.set(null);
   }
 
-  exportExcel() {
-    const rows = this.exportRows();
-    if (!rows.length) { this.toast.error('No data to export'); return; }
-    this.excelExport.exportExcel(rows, String(rows.length), 'Fee Records', 'Total Records:');
+  confirmDelete() {
+    const fee = this.pendingDelete();
+    if (!fee) return;
+    this.deleting.set(true);
+    this.data.deleteFee(fee.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.pendingDelete.set(null);
+        this.toast.success('Fee deleted');
+        this.load();
+      },
+      error: (err) => {
+        this.deleting.set(false);
+        this.pendingDelete.set(null);
+        this.toast.error(apiErrorMessage(err, 'Failed to delete the fee'));
+      },
+    });
+  }
+
+  get deleteMessage(): string {
+    const fee = this.pendingDelete();
+    return fee ? `Delete the ${this.label(fee)} fee for ${fee.student?.name ?? 'this student'}?` : '';
   }
 }
