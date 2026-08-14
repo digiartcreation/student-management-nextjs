@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+}
+
+/// How often a fee recurs. `OTHER` is a one-off charge — a bus fee, an exam
+/// fee — and is the only type that carries a title.
+enum FeeType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  OTHER
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         UserRole     @default(STAFF)
+  status       RecordStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+/// A class-section the school teaches, e.g. "10-A".
+model Section {
+  id        Int          @id @default(autoincrement())
+  name      String       @unique
+  status    RecordStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  students  Student[]
+
+  @@index([status])
+}
+
+model Student {
+  id           Int          @id @default(autoincrement())
+  rollNo       String       @unique
+  name         String
+  age          Int
+  sectionId    Int
+  parentMobile String
+  status       RecordStatus @default(ACTIVE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  section      Section      @relation(fields: [sectionId], references: [id], onDelete: Restrict)
+  attendances  Attendance[]
+  fees         Fee[]
+
+  @@index([sectionId])
+  @@index([name])
+  @@index([status])
+}
+
+/// One row per student per day. Absent is stored explicitly rather than inferred
+/// from a missing row, so "not filled yet" stays distinguishable from "absent".
+model Attendance {
+  id        Int              @id @default(autoincrement())
+  studentId Int
+  date      DateTime         @db.Date
+  status    AttendanceStatus
+  remarks   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+  @@index([date])
+  @@index([status])
+}
+
+/// One billed charge against a student.
+///
+/// `period` is the plain text key the charge is addressed by, and its shape
+/// follows `feeType`: "2026-08" monthly, "2026-Q3" quarterly, "2026" yearly.
+/// A one-off `OTHER` charge is periodised by the month it falls in and named by
+/// `title` ("Bus fee"), which is why the unique key includes both — a student
+/// can carry several one-offs in a month as long as they are named differently.
+/// `title` is stored as "" rather than NULL for the recurring types, because
+/// MySQL exempts rows with a NULL from a unique index and the duplicate-month
+/// guard would quietly stop biting.
+///
+/// `billedMonth` is `period` collapsed to the month the charge lands in — Q3
+/// bills in July, a year bills in January. It is derived on write so the
+/// dashboard can roll every fee type into one indexed month lookup instead of
+/// parsing periods in application code.
+model Fee {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  feeType     FeeType   @default(MONTHLY)
+  period      String    @db.VarChar(10)
+  title       String    @default("") @db.VarChar(60)
+  billedMonth String    @db.VarChar(7)
+  amount      Decimal   @db.Decimal(10, 2)
+  paid        Boolean   @default(false)
+  paidDate    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, feeType, period, title])
+  @@index([billedMonth])
+  @@index([period])
+  @@index([feeType])
+  @@index([paid])
+}

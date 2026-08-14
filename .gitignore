@@ -1,0 +1,14 @@
+node_modules/
+.next/
+generated/
+coverage/
+
+# Every env file is secret except the template. `.env.production` in particular
+# holds the live credentials and is only ever uploaded through hPanel's
+# "Import .env" — it must never be committed.
+.env
+.env.*
+!.env.example
+
+# public/ is deliberately NOT ignored: it holds the Angular build that ships
+# with the deployment, and the server cannot regenerate it.
