@@ -44,24 +44,63 @@ model User {
 }
 
 /// A class-section the school teaches, e.g. "10-A".
-model Section {
+/// A year group — "10", "9", "LKG". Sections hang off it, so "10-A" is now the
+/// pair (Class 10, Section A) rather than one opaque name.
+model Class {
   id        Int          @id @default(autoincrement())
   name      String       @unique
   status    RecordStatus @default(ACTIVE)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  students  Student[]
+  sections  Section[]
 
   @@index([status])
 }
 
+/// A division within a class. `name` is just the letter now ("A"), so it is only
+/// unique alongside its class — every year group may have its own A.
+model Section {
+  id        Int          @id @default(autoincrement())
+  classId   Int
+  name      String
+  status    RecordStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  class     Class        @relation(fields: [classId], references: [id], onDelete: Restrict)
+  students  Student[]
+
+  @@unique([classId, name])
+  @@index([status])
+  @@index([classId])
+}
+
+/// The guardian and personal fields are NOT NULL with empty-string defaults
+/// rather than nullable. The intent is that they are mandatory, and validation
+/// enforces that on every create and update — but the students already on file
+/// predate these columns, and inventing a father's name or a blood group to
+/// satisfy a constraint would put fiction in the record. Empty is honestly
+/// empty; those rows must be completed the next time they are edited.
+///
+/// `joiningDate` is the exception: existing rows were backfilled from their own
+/// `createdAt`, which is a real date rather than a placeholder.
 model Student {
   id           Int          @id @default(autoincrement())
   rollNo       String       @unique
   name         String
   age          Int
   sectionId    Int
+  /// Primary contact, kept alongside the parent numbers below.
   parentMobile String
+  fatherName   String       @default("")
+  motherName   String       @default("")
+  fatherMobile String       @default("")
+  motherMobile String       @default("")
+  /// No `@default` here: MySQL will not take a literal default on a TEXT
+  /// column, so the empty value for pre-existing rows is set by the migration
+  /// instead and every write supplies one.
+  address      String       @db.Text
+  bloodGroup   String       @default("")
+  joiningDate  DateTime     @default(now())
   status       RecordStatus @default(ACTIVE)
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -72,6 +111,7 @@ model Student {
   @@index([sectionId])
   @@index([name])
   @@index([status])
+  @@index([joiningDate])
 }
 
 /// One row per student per day. Absent is stored explicitly rather than inferred

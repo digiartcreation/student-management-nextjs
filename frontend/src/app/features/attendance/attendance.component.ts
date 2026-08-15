@@ -1,6 +1,10 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { AgGridAngular } from 'ag-grid-angular';
+import { CellValueChangedEvent, ColDef, GridOptions, ICellRendererParams } from 'ag-grid-community';
+import { baseGridOptions } from '../../core/utils/grid';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { apiErrorMessage } from '../../core/utils/api-envelope';
@@ -11,7 +15,7 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 @Component({
   selector: 'app-attendance',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgSelectModule, AgGridAngular],
   templateUrl: './attendance.component.html',
 })
 export class AttendanceComponent implements OnInit {
@@ -28,6 +32,103 @@ export class AttendanceComponent implements OnInit {
 
   /** Working copy — edits stay local until Save is pressed. */
   rows = signal<RosterRow[]>([]);
+
+  gridOptions: GridOptions = {
+    ...baseGridOptions,
+    domLayout: 'autoHeight',
+    // The roster is filled in one sitting, so paging it would hide students
+    // who still need marking behind a page control.
+    pagination: false,
+    rowHeight: 44,
+    getRowId: (params) => String(params.data.studentId),
+  };
+
+  columnDefs: ColDef<RosterRow>[] = [
+    { headerName: 'Roll No', field: 'rollNo', width: 110, flex: 0 },
+    { headerName: 'Student', field: 'name', minWidth: 160, flex: 1 },
+    { headerName: 'Class-Sec', field: 'sectionName', width: 120, flex: 0 },
+    {
+      headerName: 'Mark',
+      width: 170,
+      flex: 0,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: ICellRendererParams<RosterRow>) => {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;gap:6px;align-items:center;height:100%';
+        const marks: Array<[RosterStatus, string, string]> = [
+          ['PRESENT', 'P', '#16a34a'],
+          ['LATE', 'L', '#d97706'],
+          ['ABSENT', 'A', '#dc2626'],
+        ];
+        for (const [status, letter, colour] of marks) {
+          const button = document.createElement('button');
+          const active = params.data?.status === status;
+          button.textContent = letter;
+          button.style.cssText = `border:1px solid ${colour};border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;background:${
+            active ? colour : '#fff'
+          };color:${active ? '#fff' : colour}`;
+          button.addEventListener('click', () => {
+            if (!params.data) return;
+            this.setStatus(params.data, status);
+            params.api.refreshCells({ rowNodes: [params.node], force: true });
+          });
+          wrap.appendChild(button);
+        }
+        return wrap;
+      },
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      width: 130,
+      flex: 0,
+      cellRenderer: (params: ICellRendererParams<RosterRow>) => {
+        const value = String(params.value);
+        const styles: Record<string, string> = {
+          PRESENT: 'background:#dcfce7;color:#166534',
+          LATE: 'background:#fef3c7;color:#92400e',
+          ABSENT: 'background:#fee2e2;color:#991b1b',
+          NOT_MARKED: 'background:#f1f5f9;color:#475569',
+        };
+        const label = value === 'NOT_MARKED' ? 'Not marked' : value.charAt(0) + value.slice(1).toLowerCase();
+        return `<span style="${styles[value] ?? ''};border-radius:9999px;padding:2px 10px;font-size:11px;font-weight:700">${label}</span>`;
+      },
+    },
+    {
+      headerName: 'Remarks',
+      field: 'remarks',
+      minWidth: 180,
+      flex: 1,
+      editable: true,
+      sortable: false,
+      filter: false,
+    },
+    {
+      headerName: 'Clear',
+      width: 90,
+      flex: 0,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: ICellRendererParams<RosterRow>) => {
+        if (params.data?.status === 'NOT_MARKED') return '';
+        const button = document.createElement('button');
+        button.textContent = 'Clear';
+        button.style.cssText =
+          'color:#6b7280;font-weight:700;font-size:12px;background:none;border:none';
+        button.addEventListener('click', () => {
+          if (!params.data) return;
+          this.clearRow(params.data);
+          params.api.refreshCells({ rowNodes: [params.node], force: true });
+        });
+        return button;
+      },
+    },
+  ];
+
+  onRemarksChanged(event: CellValueChangedEvent<RosterRow>) {
+    this.setRemarks(event.data, String(event.newValue ?? ''));
+  }
   private savedSnapshot = signal<string>('');
 
   summary = computed(() => {

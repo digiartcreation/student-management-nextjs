@@ -1,10 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
+import { AgGridAngular } from 'ag-grid-angular';
+import { CellValueChangedEvent, ColDef, GridOptions, ICellRendererParams } from 'ag-grid-community';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../shared/toast/toast.service';
 import { ConfirmDialog } from '../../shared/confirm-dialog/confirm-dialog';
 import { apiErrorMessage } from '../../core/utils/api-envelope';
+import { baseGridOptions } from '../../core/utils/grid';
 import {
   FEE_TYPES,
   FEE_TYPE_LABELS,
@@ -56,7 +60,7 @@ const emptyPeriod = (): PeriodParts => ({
 @Component({
   selector: 'app-fees',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmDialog],
+  imports: [CommonModule, FormsModule, NgSelectModule, AgGridAngular, ConfirmDialog],
   templateUrl: './fees.component.html',
 })
 export class FeesComponent implements OnInit {
@@ -65,6 +69,128 @@ export class FeesComponent implements OnInit {
 
   readonly feeTypes = FEE_TYPES;
   readonly typeLabels = FEE_TYPE_LABELS;
+
+  /** ng-select binds against objects, so the type codes are paired with labels. */
+  readonly feeTypeOptions = FEE_TYPES.map((value) => ({ value, label: FEE_TYPE_LABELS[value] }));
+  readonly paidOptions = [
+    { value: '', label: 'All' },
+    { value: 'true', label: 'Paid' },
+    { value: 'false', label: 'Unpaid' },
+  ];
+  readonly quarterOptions = [
+    { value: 1, label: 'Q1 · Jan–Mar' },
+    { value: 2, label: 'Q2 · Apr–Jun' },
+    { value: 3, label: 'Q3 · Jul–Sep' },
+    { value: 4, label: 'Q4 · Oct–Dec' },
+  ];
+
+  private dates = new DatePipe('en-IN');
+
+  gridOptions: GridOptions = { ...baseGridOptions, domLayout: 'autoHeight' };
+
+  columnDefs: ColDef<Fee>[] = [
+    { headerName: 'Roll No', field: 'student.rollNo', width: 110, flex: 0 },
+    { headerName: 'Student', field: 'student.name', minWidth: 150, flex: 1 },
+    {
+      headerName: 'Class-Sec',
+      width: 120,
+      flex: 0,
+      valueGetter: (params) => this.data.sectionLabel(params.data?.student?.section),
+    },
+    {
+      headerName: 'Type',
+      field: 'feeType',
+      width: 120,
+      flex: 0,
+      valueFormatter: (params) => FEE_TYPE_LABELS[params.value as FeeType] ?? '',
+    },
+    {
+      headerName: 'Period',
+      width: 170,
+      minWidth: 140,
+      valueGetter: (params) => (params.data ? this.label(params.data) : ''),
+    },
+    {
+      headerName: 'Amount',
+      field: 'amount',
+      width: 130,
+      flex: 0,
+      type: 'rightAligned',
+      // Edited in place rather than through a separate row-edit mode: ag-grid
+      // already provides the editor, and onCellValueChanged persists it.
+      editable: true,
+      valueFormatter: (params) => this.money(params.value),
+      cellStyle: { fontWeight: '700' },
+    },
+    {
+      headerName: 'Status',
+      field: 'paid',
+      width: 110,
+      flex: 0,
+      valueFormatter: (params) => (params.value ? 'Paid' : 'Unpaid'),
+      cellRenderer: (params: ICellRendererParams<Fee>) => {
+        const paid = Boolean(params.value);
+        const style = paid ? 'background:#dcfce7;color:#15803d' : 'background:#fee2e2;color:#b91c1c';
+        return `<span style="${style};border-radius:9999px;padding:2px 10px;font-size:11px;font-weight:700">${
+          paid ? 'Paid' : 'Unpaid'
+        }</span>`;
+      },
+    },
+    {
+      headerName: 'Paid On',
+      field: 'paidDate',
+      width: 130,
+      flex: 0,
+      valueFormatter: (params) =>
+        params.value ? (this.dates.transform(params.value, 'dd MMM yyyy') ?? '') : '—',
+    },
+    {
+      headerName: 'Actions',
+      width: 220,
+      flex: 0,
+      sortable: false,
+      filter: false,
+      pinned: 'right',
+      cellRenderer: (params: ICellRendererParams<Fee>) => {
+        const wrap = document.createElement('div');
+        const paid = params.data?.paid;
+        wrap.innerHTML =
+          `<button data-act="toggle" style="color:${
+            paid ? '#d97706' : '#16a34a'
+          };font-weight:700;font-size:12px;background:none;border:none;margin-right:10px">${
+            paid ? 'Mark Unpaid' : 'Mark Paid'
+          }</button>` +
+          '<button data-act="del" style="color:#ef4444;font-weight:700;font-size:12px;background:none;border:none">Delete</button>';
+        wrap.addEventListener('click', (event) => {
+          const act = (event.target as HTMLElement).dataset['act'];
+          if (!params.data) return;
+          if (act === 'toggle') this.togglePaid(params.data);
+          if (act === 'del') this.askDelete(params.data);
+        });
+        return wrap;
+      },
+    },
+  ];
+
+  /** Persists an in-place amount edit; reverts the cell if the API rejects it. */
+  onAmountChanged(event: CellValueChangedEvent<Fee>) {
+    const fee = event.data;
+    const next = Number(event.newValue);
+    if (!(next > 0)) {
+      this.toast.error('Amount must be greater than zero');
+      this.load();
+      return;
+    }
+    if (next === Number(event.oldValue)) return;
+
+    this.data.updateFee(fee.id, next).subscribe({
+      next: () => this.toast.success('Amount updated'),
+      error: (err) => {
+        this.toast.error(apiErrorMessage(err, 'Failed to update the amount'));
+        this.load();
+      },
+    });
+  }
 
   sections = this.data.sections;
   students = signal<Student[]>([]);

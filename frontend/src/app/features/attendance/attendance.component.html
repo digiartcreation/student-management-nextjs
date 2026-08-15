@@ -13,17 +13,11 @@
           <span class="font-semibold text-gray-500">Date</span>
           <input type="date" [max]="today"
             class="border-none bg-transparent text-xs font-semibold text-gray-800 outline-none cursor-pointer"
-            [ngModel]="date()" (ngModelChange)="date.set($event); load()"/>
+            [ngModel]="date()" (ngModelChange)="date.set($event ?? ''); load()"/>
         </div>
 
-        <select
-          class="rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-semibold text-gray-700 outline-none focus:border-indigo-500 focus:bg-white cursor-pointer"
-          [ngModel]="sectionId()" (ngModelChange)="sectionId.set($event); load()">
-          <option [ngValue]="''">All sections</option>
-          @for (section of sections(); track section.id) {
-            <option [ngValue]="section.id">{{ section.name }}</option>
-          }
-        </select>
+        <ng-select class="w-48" [items]="sections()" bindLabel="label" bindValue="id" placeholder="All sections"
+          [ngModel]="sectionId() || null" (ngModelChange)="sectionId.set($event ?? ''); load()"></ng-select>
 
         <button
           class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-100 cursor-pointer"
@@ -92,61 +86,13 @@
     @if (loading()) {
       <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">Loading roster…</div>
     } @else {
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50 text-left text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-              <th class="px-4 py-3">Roll No</th>
-              <th class="px-4 py-3">Student</th>
-              <th class="px-4 py-3">Section</th>
-              <th class="px-4 py-3 text-center">Mark</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Remarks</th>
-              <th class="px-4 py-3 text-right">Clear</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of rows(); track row.studentId) {
-              <tr class="border-t border-gray-100 hover:bg-gray-50/60">
-                <td class="px-4 py-2.5 font-mono text-xs text-gray-600">{{ row.rollNo }}</td>
-                <td class="px-4 py-2.5 font-bold text-gray-900">{{ row.name }}</td>
-                <td class="px-4 py-2.5 text-gray-600">{{ row.sectionName }}</td>
-                <td class="px-4 py-2.5">
-                  <div class="flex justify-center gap-1.5">
-                    <button class="rounded-md border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
-                      [class]="buttonClass(row, 'PRESENT')" (click)="setStatus(row, 'PRESENT')">P</button>
-                    <button class="rounded-md border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
-                      [class]="buttonClass(row, 'LATE')" (click)="setStatus(row, 'LATE')">L</button>
-                    <button class="rounded-md border px-2.5 py-1 text-[11px] font-bold transition cursor-pointer"
-                      [class]="buttonClass(row, 'ABSENT')" (click)="setStatus(row, 'ABSENT')">A</button>
-                  </div>
-                </td>
-                <td class="px-4 py-2.5">
-                  <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" [class]="statusClass(row.status)">
-                    {{ row.status === 'NOT_MARKED' ? 'Not marked' : (row.status | titlecase) }}
-                  </span>
-                </td>
-                <td class="px-4 py-2.5">
-                  <input type="text" placeholder="—"
-                    class="w-full max-w-[190px] rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs outline-none focus:border-indigo-500 focus:bg-white"
-                    [ngModel]="row.remarks" (ngModelChange)="setRemarks(row, $event)"/>
-                </td>
-                <td class="px-4 py-2.5 text-right">
-                  @if (row.status !== 'NOT_MARKED') {
-                    <button class="text-xs font-bold text-gray-500 hover:text-red-600 hover:underline cursor-pointer" (click)="clearRow(row)">Clear</button>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="7" class="px-4 py-12 text-center text-sm font-semibold text-gray-400">
-                  No active students in this section
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      @if (!rows().length) {
+        <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">No active students in this section</div>
+      } @else {
+        <ag-grid-angular style="width: 100%;" [gridOptions]="gridOptions" [rowData]="rows()"
+          [columnDefs]="columnDefs" (cellValueChanged)="onRemarksChanged($event)"></ag-grid-angular>
+        <p class="px-2 py-2 text-[11px] text-gray-400">Double-click a remark to edit it.</p>
+      }
     }
   </div>
 </div>

@@ -13,6 +13,7 @@ export const GET = route(async (request: NextRequest) => {
   const result = await listStudents({
     ...paging,
     search: toOptionalString(searchParams.get("search")),
+    classId: toOptionalNumber(searchParams.get("classId")),
     sectionId: toOptionalNumber(searchParams.get("sectionId")),
     status: (searchParams.get("status") as "ACTIVE" | "INACTIVE" | null) ?? undefined,
   });

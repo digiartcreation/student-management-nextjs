@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
   AllCommunityModule,
@@ -73,7 +74,7 @@ const asDate = (value: string) =>
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, FormsModule, AgGridAngular],
+  imports: [CommonModule, FormsModule, NgSelectModule, AgGridAngular],
   templateUrl: './reports.component.html',
 })
 export class ReportsComponent implements OnInit {
@@ -108,6 +109,25 @@ export class ReportsComponent implements OnInit {
 
   statuses = ATTENDANCE_STATUSES;
   feeTypeLabels = FEE_TYPE_LABELS;
+
+  // ng-select binds objects, so each filter's choices are listed as {value,label}.
+  readonly feeModes: Array<{ value: FeeMode; label: string }> = [
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'overall', label: 'Overall' },
+  ];
+  readonly statusOptions: Array<{ value: AttendanceStatus | ''; label: string }> = [
+    { value: '', label: 'All statuses' },
+    ...ATTENDANCE_STATUSES.map((value) => ({
+      value,
+      label: value.charAt(0) + value.slice(1).toLowerCase(),
+    })),
+  ];
+  readonly paidOptions = [
+    { value: '', label: 'All' },
+    { value: 'true', label: 'Paid' },
+    { value: 'false', label: 'Unpaid' },
+  ];
 
   defaultColDef: ColDef = {
     sortable: true,
@@ -173,7 +193,7 @@ export class ReportsComponent implements OnInit {
   }
 
   private sectionName(id: number | null): string {
-    return this.sections().find((item) => item.id === id)?.name ?? '';
+    return this.data.sectionLabel(this.sections().find((item) => item.id === id));
   }
 
   // ── Running ─────────────────────────────────────────────────────────────────
@@ -283,7 +303,7 @@ export class ReportsComponent implements OnInit {
     { header: 'Date', value: (row) => asDate(row.date) },
     { header: 'Roll No', value: (row) => row.student?.rollNo ?? '' },
     { header: 'Student', value: (row) => row.student?.name ?? '' },
-    { header: 'Section', value: (row) => row.student?.section?.name ?? '' },
+    { header: 'Class-Sec', value: (row) => this.data.sectionLabel(row.student?.section) },
     { header: 'Status', value: (row) => row.status },
     { header: 'Remarks', value: (row) => row.remarks ?? '' },
   ];
@@ -291,7 +311,7 @@ export class ReportsComponent implements OnInit {
   private feeColumns: ExportColumn<Fee>[] = [
     { header: 'Roll No', value: (row) => row.student?.rollNo ?? '' },
     { header: 'Student', value: (row) => row.student?.name ?? '' },
-    { header: 'Section', value: (row) => row.student?.section?.name ?? '' },
+    { header: 'Class-Sec', value: (row) => this.data.sectionLabel(row.student?.section) },
     { header: 'Type', value: (row) => FEE_TYPE_LABELS[row.feeType] },
     { header: 'Period', value: (row) => row.period },
     { header: 'Title', value: (row) => row.title || '—' },

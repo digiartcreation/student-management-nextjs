@@ -2,6 +2,7 @@ import { AttendanceStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { BusinessError, NotFoundError } from "@/lib/errors";
 import { formatDateOnly, isFutureDate, normalizeDateOnly, summarize } from "@/utils/attendance";
+import { sectionLabel } from "@/utils/section";
 
 /**
  * The day's roster: every active student, each carrying their saved status or
@@ -13,8 +14,8 @@ export async function getRoster(filters: { date: Date; sectionId?: number }) {
   const [students, attendances] = await prisma.$transaction([
     prisma.student.findMany({
       where: { status: "ACTIVE", sectionId: filters.sectionId },
-      include: { section: true },
-      orderBy: [{ section: { name: "asc" } }, { rollNo: "asc" }],
+      include: { section: { include: { class: true } } },
+      orderBy: [{ section: { class: { name: "asc" } } }, { section: { name: "asc" } }, { rollNo: "asc" }],
     }),
     prisma.attendance.findMany({ where: { date, student: { sectionId: filters.sectionId } } }),
   ]);
@@ -29,7 +30,7 @@ export async function getRoster(filters: { date: Date; sectionId?: number }) {
       rollNo: student.rollNo,
       name: student.name,
       sectionId: student.sectionId,
-      sectionName: student.section.name,
+      sectionName: sectionLabel(student.section),
       status: (saved?.status ?? "NOT_MARKED") as AttendanceStatus | "NOT_MARKED",
       remarks: saved?.remarks ?? null,
     };

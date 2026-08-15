@@ -1,8 +1,10 @@
 import { AttendanceStatus, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { BLOOD_GROUPS } from "../validations/student.schema";
 
 const prisma = new PrismaClient();
 
+/** Written as "class-section"; the seed splits each into the two records. */
 const SECTIONS = ["8-A", "9-A", "10-A", "10-B"];
 
 const STUDENTS = [
@@ -35,25 +37,44 @@ async function main() {
     create: { name: "Staff User", email: "staff@example.com", passwordHash, role: "STAFF", status: "ACTIVE" },
   });
 
-  for (const name of SECTIONS) {
-    await prisma.section.upsert({ where: { name }, update: {}, create: { name } });
+  // SECTIONS still reads "10-A", which is now a class and a section. Split on
+  // the dash so the seed keeps describing the school the familiar way.
+  const sectionByLabel = new Map<string, number>();
+  for (const label of SECTIONS) {
+    const [className, sectionName = "A"] = label.split("-");
+    const parent = await prisma.class.upsert({
+      where: { name: className },
+      update: {},
+      create: { name: className },
+    });
+    const section = await prisma.section.upsert({
+      where: { classId_name: { classId: parent.id, name: sectionName } },
+      update: {},
+      create: { classId: parent.id, name: sectionName },
+    });
+    sectionByLabel.set(label, section.id);
   }
-  const sections = await prisma.section.findMany();
-  const sectionByName = new Map(sections.map((section) => [section.name, section.id]));
 
   for (const student of STUDENTS) {
-    const sectionId = sectionByName.get(student.section);
+    const sectionId = sectionByLabel.get(student.section);
     if (!sectionId) throw new Error(`Missing section ${student.section}`);
+    const details = {
+      name: student.name,
+      age: student.age,
+      sectionId,
+      parentMobile: student.parentMobile,
+      fatherName: `${student.name.split(" ").slice(-1)[0]} Senior`,
+      motherName: `${student.name.split(" ").slice(-1)[0]} Devi`,
+      fatherMobile: student.parentMobile,
+      motherMobile: student.parentMobile,
+      address: `${student.rollNo} Demo Street, Chennai`,
+      bloodGroup: BLOOD_GROUPS[student.rollNo.charCodeAt(student.rollNo.length - 1) % BLOOD_GROUPS.length],
+      joiningDate: new Date(`${new Date().getFullYear()}-06-01`),
+    };
     await prisma.student.upsert({
       where: { rollNo: student.rollNo },
-      update: { name: student.name, age: student.age, sectionId, parentMobile: student.parentMobile },
-      create: {
-        rollNo: student.rollNo,
-        name: student.name,
-        age: student.age,
-        sectionId,
-        parentMobile: student.parentMobile,
-      },
+      update: details,
+      create: { rollNo: student.rollNo, ...details },
     });
   }
 
@@ -140,7 +161,7 @@ async function main() {
   await prisma.fee.deleteMany({ where: { studentId: { in: students.map((s) => s.id) } } });
   await prisma.fee.createMany({ data: [...monthlyFees, ...otherFees] });
 
-  console.log(`Seeded ${sections.length} sections, ${students.length} students.`);
+  console.log(`Seeded ${sectionByLabel.size} sections, ${students.length} students.`);
   console.log(`Seeded ${rows.length} attendance rows across 20 weekdays.`);
   console.log(
     `Seeded ${monthlyFees.length + otherFees.length} fees: monthly ${months.join(", ")}, ` +

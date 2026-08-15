@@ -59,19 +59,16 @@
         <p class="mt-0.5 mb-4 text-xs text-gray-400">Present + late, as a share of students marked</p>
 
         @if (board.daily.length) {
-          <div class="flex h-44 items-end gap-1.5 overflow-x-auto">
-            @for (day of board.daily; track day.date) {
-              <div class="flex min-w-[26px] flex-1 flex-col items-center gap-1.5">
-                <div class="flex h-36 w-full items-end justify-center">
-                  <div class="w-full max-w-[22px] rounded-t-md"
-                       [class]="rateColor(day.attendancePercentage)"
-                       [style.height.%]="day.attendancePercentage"
-                       [title]="day.date + ' — ' + day.attendancePercentage + '% (P ' + day.present + ' / L ' + day.late + ' / A ' + day.absent + ')'"></div>
-                </div>
-                <span class="text-[9px] font-semibold text-gray-400">{{ dayLabel(day.date) }}</span>
-              </div>
-            }
-          </div>
+          <apx-chart
+            [series]="dailyChart().series"
+            [chart]="dailyChart().chart"
+            [plotOptions]="dailyChart().plotOptions"
+            [dataLabels]="dailyChart().dataLabels"
+            [legend]="dailyChart().legend"
+            [xaxis]="dailyChart().xaxis"
+            [yaxis]="dailyChart().yaxis"
+            [grid]="dailyChart().grid"
+            [tooltip]="dailyChart().tooltip"></apx-chart>
         } @else {
           <div class="py-12 text-center text-sm font-semibold text-gray-400">No attendance filled this month</div>
         }
@@ -82,25 +79,21 @@
         <h3 class="m-0 text-sm font-bold text-gray-900">By section</h3>
         <p class="mt-0.5 mb-4 text-xs text-gray-400">Attendance rate this month</p>
 
-        <div class="flex flex-col gap-3">
-          @for (row of board.bySection; track row.sectionId) {
-            <div>
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-bold text-gray-700">{{ row.section }}</span>
-                <span class="font-semibold text-gray-500">
-                  {{ row.attendancePercentage }}%
-                  <span class="ml-1 text-gray-400">(P {{ row.present }} · L {{ row.late }} · A {{ row.absent }})</span>
-                </span>
-              </div>
-              <div class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                <div class="h-full rounded-full" [class]="rateColor(row.attendancePercentage)"
-                     [style.width.%]="row.attendancePercentage"></div>
-              </div>
-            </div>
-          } @empty {
-            <div class="py-8 text-center text-sm font-semibold text-gray-400">No data yet</div>
-          }
-        </div>
+        @if (board.bySection.length) {
+          <apx-chart
+            [series]="sectionChart().series"
+            [chart]="sectionChart().chart"
+            [plotOptions]="sectionChart().plotOptions"
+            [colors]="sectionChart().colors"
+            [dataLabels]="sectionChart().dataLabels"
+            [legend]="sectionChart().legend"
+            [xaxis]="sectionChart().xaxis"
+            [yaxis]="sectionChart().yaxis"
+            [grid]="sectionChart().grid"
+            [tooltip]="sectionChart().tooltip"></apx-chart>
+        } @else {
+          <div class="py-8 text-center text-sm font-semibold text-gray-400">No data yet</div>
+        }
       </div>
     </div>
 

@@ -1,0 +1,1 @@
+var e=[{value:"ACTIVE",label:"Active"},{value:"INACTIVE",label:"Inactive"}],t=[{value:"",label:"All statuses"},...e],n=["PRESENT","LATE","ABSENT"],r=["A+","A-","B+","B-","AB+","AB-","O+","O-"],s=["MONTHLY","QUARTERLY","YEARLY","OTHER"],a={MONTHLY:"Monthly",QUARTERLY:"Quarterly",YEARLY:"Yearly",OTHER:"Other"};export{e as a,t as b,n as c,r as d,s as e,a as f};

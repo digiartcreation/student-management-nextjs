@@ -8,13 +8,23 @@ type StudentInput = {
   age: number;
   sectionId: number;
   parentMobile: string;
+  fatherName: string;
+  motherName: string;
+  fatherMobile: string;
+  motherMobile: string;
+  address: string;
+  bloodGroup: string;
+  joiningDate: Date;
   status?: "ACTIVE" | "INACTIVE";
 };
 
-const studentInclude = { section: true } satisfies Prisma.StudentInclude;
+// The class now hangs off the section, so it has to be pulled through for any
+// screen that shows "10-A" rather than just "A".
+const studentInclude = { section: { include: { class: true } } } satisfies Prisma.StudentInclude;
 
 export async function listStudents(filters: {
   search?: string;
+  classId?: number;
   sectionId?: number;
   status?: "ACTIVE" | "INACTIVE";
   page: number;
@@ -24,12 +34,19 @@ export async function listStudents(filters: {
   const where: Prisma.StudentWhereInput = {
     sectionId: filters.sectionId,
     status: filters.status,
+    // Filtering by class means "any section of that class", which the relation
+    // expresses directly — no need to resolve the section ids first.
+    ...(filters.classId ? { section: { classId: filters.classId } } : {}),
     ...(filters.search
       ? {
           OR: [
             { name: { contains: filters.search } },
             { rollNo: { contains: filters.search } },
             { parentMobile: { contains: filters.search } },
+            { fatherName: { contains: filters.search } },
+            { motherName: { contains: filters.search } },
+            { fatherMobile: { contains: filters.search } },
+            { motherMobile: { contains: filters.search } },
           ],
         }
       : {}),
@@ -41,7 +58,7 @@ export async function listStudents(filters: {
       include: studentInclude,
       skip: filters.skip,
       take: filters.size,
-      orderBy: [{ section: { name: "asc" } }, { rollNo: "asc" }],
+      orderBy: [{ section: { class: { name: "asc" } } }, { section: { name: "asc" } }, { rollNo: "asc" }],
     }),
     prisma.student.count({ where }),
   ]);

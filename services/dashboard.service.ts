@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { NotFoundError } from "@/lib/errors";
 import { formatDateOnly, normalizeDateOnly, summarize } from "@/utils/attendance";
+import { sectionLabel } from "@/utils/section";
 
 const sum = (rows: Array<{ amount: Prisma.Decimal }>) =>
   rows.reduce((total, row) => total.add(row.amount), new Prisma.Decimal(0)).toFixed(2);
@@ -40,7 +41,7 @@ export async function getFeesDashboard(month: string) {
     }),
     prisma.fee.findMany({
       where: { billedMonth: month, paid: false },
-      include: { student: { include: { section: true } } },
+      include: { student: { include: { section: { include: { class: true } } } } },
       orderBy: { amount: "desc" },
       take: 10,
     }),
@@ -93,7 +94,7 @@ export async function getFeesDashboard(month: string) {
       studentId: fee.studentId,
       rollNo: fee.student.rollNo,
       name: fee.student.name,
-      section: fee.student.section.name,
+      section: sectionLabel(fee.student.section),
       feeType: fee.feeType,
       period: fee.period,
       title: fee.title,
@@ -111,7 +112,7 @@ export async function getFeesDashboard(month: string) {
 export async function getStudentDashboard(studentId: number, month: string) {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    include: { section: true },
+    include: { section: { include: { class: true } } },
   });
   if (!student) throw new NotFoundError("Student not found");
 
@@ -146,7 +147,7 @@ export async function getStudentDashboard(studentId: number, month: string) {
       rollNo: student.rollNo,
       name: student.name,
       age: student.age,
-      section: student.section.name,
+      section: sectionLabel(student.section),
       sectionId: student.sectionId,
       parentMobile: student.parentMobile,
       status: student.status,
@@ -227,7 +228,10 @@ export async function getAttendanceDashboard(input: { date: Date; month: string 
       where: { date: { gte: monthStart, lte: monthEnd } },
       select: { date: true, status: true, studentId: true, student: { select: { sectionId: true } } },
     }),
-    prisma.section.findMany({ orderBy: { name: "asc" } }),
+    prisma.section.findMany({
+      orderBy: [{ class: { name: "asc" } }, { name: "asc" }],
+      include: { class: true },
+    }),
   ]);
 
   const today = summarize(todayRows.map((row) => ({ status: row.status })));
@@ -261,7 +265,7 @@ export async function getAttendanceDashboard(input: { date: Date; month: string 
       const counts = summarize(rows.map((row) => ({ status: row.status })));
       return {
         sectionId: section.id,
-        section: section.name,
+        section: sectionLabel(section),
         present: counts.present,
         late: counts.late,
         absent: counts.absent,
@@ -285,7 +289,7 @@ export async function getAttendanceDashboard(input: { date: Date; month: string 
     .map(([studentId]) => studentId);
 
   const topStudents = topIds.length
-    ? await prisma.student.findMany({ where: { id: { in: topIds } }, include: { section: true } })
+    ? await prisma.student.findMany({ where: { id: { in: topIds } }, include: { section: { include: { class: true } } } })
     : [];
 
   const topAbsentees = topIds.map((studentId) => {
@@ -295,7 +299,7 @@ export async function getAttendanceDashboard(input: { date: Date; month: string 
       studentId,
       rollNo: student?.rollNo ?? "",
       name: student?.name ?? "",
-      section: student?.section.name ?? "",
+      section: student ? sectionLabel(student.section) : "",
       absentDays: counts.absent,
       lateDays: counts.late,
     };

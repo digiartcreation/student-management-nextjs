@@ -12,3 +12,7 @@ coverage/
 
 # public/ is deliberately NOT ignored: it holds the Angular build that ships
 # with the deployment, and the server cannot regenerate it.
+
+# Database dumps taken before migrations. Real student and fee data — never
+# commit these.
+backups/

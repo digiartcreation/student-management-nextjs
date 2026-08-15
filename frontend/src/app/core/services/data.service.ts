@@ -8,6 +8,8 @@ import {
   AttendancePage,
   AttendanceRecord,
   AttendanceStatus,
+  ClassGroup,
+  ClassPayload,
   Fee,
   FeePage,
   FeePayload,
@@ -17,6 +19,7 @@ import {
   GenerateResult,
   Roster,
   Section,
+  SectionPayload,
   Student,
   StudentDashboard,
   StudentPayload,
@@ -41,21 +44,49 @@ export class DataService {
   private http = inject(HttpClient);
 
   sections = signal<Section[]>([]);
+  classes = signal<ClassGroup[]>([]);
+
+  /** "10-A" for a section, however the caller got hold of it. */
+  sectionLabel(section: Section | undefined | null): string {
+    if (!section) return '';
+    return section.label ?? (section.class ? `${section.class.name}-${section.name}` : section.name);
+  }
+
+  // ── Classes ───────────────────────────────────────────────────────────────
+  loadClasses(): Observable<ClassGroup[]> {
+    return this.http
+      .get<ApiEnvelope<ClassGroup[]>>(`${API_BASE_URL}/classes`)
+      .pipe(pluckData(), map((list) => list ?? []), tap((list) => this.classes.set(list)));
+  }
+
+  createClass(payload: ClassPayload): Observable<ClassGroup> {
+    return this.http.post<ApiEnvelope<ClassGroup>>(`${API_BASE_URL}/classes`, payload).pipe(pluckData());
+  }
+
+  updateClass(id: number, payload: ClassPayload): Observable<ClassGroup> {
+    return this.http
+      .put<ApiEnvelope<ClassGroup>>(`${API_BASE_URL}/classes/${id}`, payload)
+      .pipe(pluckData());
+  }
+
+  deleteClass(id: number): Observable<void> {
+    return this.http.delete<void>(`${API_BASE_URL}/classes/${id}`);
+  }
 
   // ── Sections ──────────────────────────────────────────────────────────────
-  loadSections(): Observable<Section[]> {
+  loadSections(classId?: number): Observable<Section[]> {
     return this.http
-      .get<ApiEnvelope<Section[]>>(`${API_BASE_URL}/sections`)
+      .get<ApiEnvelope<Section[]>>(`${API_BASE_URL}/sections`, { params: params({ classId }) })
       .pipe(pluckData(), map((list) => list ?? []), tap((list) => this.sections.set(list)));
   }
 
-  createSection(name: string): Observable<Section> {
-    return this.http.post<ApiEnvelope<Section>>(`${API_BASE_URL}/sections`, { name }).pipe(pluckData());
+  createSection(payload: SectionPayload): Observable<Section> {
+    return this.http.post<ApiEnvelope<Section>>(`${API_BASE_URL}/sections`, payload).pipe(pluckData());
   }
 
-  updateSection(id: number, name: string, status?: string): Observable<Section> {
+  updateSection(id: number, payload: SectionPayload): Observable<Section> {
     return this.http
-      .put<ApiEnvelope<Section>>(`${API_BASE_URL}/sections/${id}`, { name, status })
+      .put<ApiEnvelope<Section>>(`${API_BASE_URL}/sections/${id}`, payload)
       .pipe(pluckData());
   }
 
@@ -64,7 +95,7 @@ export class DataService {
   }
 
   // ── Students ──────────────────────────────────────────────────────────────
-  listStudents(filters: { search?: string; sectionId?: number; status?: string } = {}): Observable<Student[]> {
+  listStudents(filters: { search?: string; classId?: number; sectionId?: number; status?: string } = {}): Observable<Student[]> {
     return this.http
       .get<ApiEnvelope<{ content: Student[] }>>(`${API_BASE_URL}/students`, {
         params: params({ ...filters, size: 100 }),

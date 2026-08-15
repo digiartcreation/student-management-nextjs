@@ -74,27 +74,17 @@
         <h3 class="m-0 text-sm font-bold text-gray-900">Last 6 months</h3>
         <p class="mt-0.5 mb-4 text-xs text-gray-400">Billed vs collected</p>
 
-        <div class="flex h-48 items-end justify-between gap-3">
-          @for (row of board.trend; track row.month) {
-            <div class="flex flex-1 flex-col items-center gap-2">
-              <div class="relative flex h-40 w-full items-end justify-center">
-                <div class="relative w-full max-w-[42px] overflow-hidden rounded-t-md bg-indigo-100"
-                     [style.height]="barHeight(row.total)"
-                     [title]="'Billed ' + money(row.total)">
-                  <div class="absolute bottom-0 left-0 w-full bg-indigo-600"
-                       [style.height]="collectedHeight(row)"
-                       [title]="'Collected ' + money(row.collected)"></div>
-                </div>
-              </div>
-              <span class="text-[11px] font-bold text-gray-500">{{ monthLabel(row.month) }}</span>
-            </div>
-          }
-        </div>
-
-        <div class="mt-4 flex items-center gap-4 border-t border-gray-100 pt-3 text-[11px] font-semibold text-gray-500">
-          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-indigo-600"></span> Collected</span>
-          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-indigo-100"></span> Outstanding</span>
-        </div>
+        <apx-chart
+          [series]="trendChart().series"
+          [chart]="trendChart().chart"
+          [colors]="trendChart().colors"
+          [plotOptions]="trendChart().plotOptions"
+          [dataLabels]="trendChart().dataLabels"
+          [legend]="trendChart().legend"
+          [xaxis]="trendChart().xaxis"
+          [yaxis]="trendChart().yaxis"
+          [grid]="trendChart().grid"
+          [tooltip]="trendChart().tooltip"></apx-chart>
       </div>
 
       <!-- Unpaid list -->

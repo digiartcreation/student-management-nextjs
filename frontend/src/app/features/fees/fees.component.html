@@ -6,12 +6,7 @@
 <ng-template #periodFields let-form>
   <div class="flex flex-col gap-1">
     <label class="text-xs font-semibold text-gray-600">Fee Type *</label>
-    <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-      [(ngModel)]="form.feeType">
-      @for (type of feeTypes; track type) {
-        <option [ngValue]="type">{{ typeLabels[type] }}</option>
-      }
-    </select>
+    <ng-select [items]="feeTypeOptions" bindLabel="label" bindValue="value" [clearable]="false" [(ngModel)]="form.feeType"></ng-select>
   </div>
 
   @if (form.feeType === 'MONTHLY' || form.feeType === 'OTHER') {
@@ -31,13 +26,7 @@
       </div>
       <div class="flex flex-col gap-1">
         <label class="text-xs font-semibold text-gray-600">Quarter *</label>
-        <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-          [(ngModel)]="form.quarter">
-          <option [ngValue]="1">Q1 · Jan–Mar</option>
-          <option [ngValue]="2">Q2 · Apr–Jun</option>
-          <option [ngValue]="3">Q3 · Jul–Sep</option>
-          <option [ngValue]="4">Q4 · Oct–Dec</option>
-        </select>
+        <ng-select [items]="quarterOptions" bindLabel="label" bindValue="value" [clearable]="false" [(ngModel)]="form.quarter"></ng-select>
       </div>
     </div>
   } @else {
@@ -129,118 +118,38 @@
       <span class="font-semibold text-gray-500">Month</span>
       <input type="month"
         class="border-none bg-transparent text-xs font-semibold text-gray-800 outline-none cursor-pointer"
-        [ngModel]="month()" (ngModelChange)="month.set($event); load()"/>
+        [ngModel]="month()" (ngModelChange)="month.set($event ?? ''); load()"/>
     </div>
 
-    <select
-      class="min-w-[120px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-      [ngModel]="typeFilter()" (ngModelChange)="typeFilter.set($event); load()">
-      <option [ngValue]="''">All types</option>
-      @for (type of feeTypes; track type) {
-        <option [ngValue]="type">{{ typeLabels[type] }}</option>
-      }
-    </select>
+    <ng-select class="w-40" [items]="feeTypeOptions" bindLabel="label" bindValue="value" placeholder="All types"
+      [ngModel]="typeFilter() || null" (ngModelChange)="typeFilter.set($event ?? ''); load()"></ng-select>
 
-    <select
-      class="min-w-[130px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-      [ngModel]="sectionId()" (ngModelChange)="sectionId.set($event); load()">
-      <option [ngValue]="''">All sections</option>
-      @for (section of sections(); track section.id) {
-        <option [ngValue]="section.id">{{ section.name }}</option>
-      }
-    </select>
+    <ng-select class="w-44" [items]="sections()" bindLabel="label" bindValue="id" placeholder="All sections"
+      [ngModel]="sectionId() || null" (ngModelChange)="sectionId.set($event ?? ''); load()"></ng-select>
 
-    <select
-      class="min-w-[110px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-      [ngModel]="paidFilter()" (ngModelChange)="paidFilter.set($event); load()">
-      <option [ngValue]="''">All</option>
-      <option [ngValue]="'true'">Paid</option>
-      <option [ngValue]="'false'">Unpaid</option>
-    </select>
+    <ng-select class="w-32" [items]="paidOptions" bindLabel="label" bindValue="value" [clearable]="false"
+      [ngModel]="paidFilter() || null" (ngModelChange)="paidFilter.set($event ?? ''); load()"></ng-select>
 
     <input type="text" placeholder="Search student"
       class="w-52 rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-      [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+      [ngModel]="search()" (ngModelChange)="search.set($event ?? '')"/>
 
     <span class="ml-auto text-xs font-semibold text-gray-400">{{ visible().length }} record(s)</span>
   </div>
 
-  <!-- Table -->
-  <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+  <!-- Grid -->
+  <div class="rounded-2xl border border-gray-100 bg-white p-2">
     @if (loading()) {
       <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">Loading fees…</div>
-    } @else {
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50 text-left text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-              <th class="px-4 py-3">Roll No</th>
-              <th class="px-4 py-3">Student</th>
-              <th class="px-4 py-3">Section</th>
-              <th class="px-4 py-3">Type</th>
-              <th class="px-4 py-3">Period</th>
-              <th class="px-4 py-3 text-right">Amount</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3">Paid On</th>
-              <th class="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (fee of visible(); track fee.id) {
-              <tr class="border-t border-gray-100 hover:bg-gray-50/60">
-                <td class="px-4 py-2.5 font-mono text-xs text-gray-600">{{ fee.student?.rollNo }}</td>
-                <td class="px-4 py-2.5 font-bold text-gray-900">{{ fee.student?.name }}</td>
-                <td class="px-4 py-2.5 text-gray-600">{{ fee.student?.section?.name || '—' }}</td>
-                <td class="px-4 py-2.5">
-                  <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold" [class]="typeClass(fee.feeType)">
-                    {{ typeLabels[fee.feeType] }}
-                  </span>
-                </td>
-                <td class="px-4 py-2.5 text-gray-600">{{ label(fee) }}</td>
-                <td class="px-4 py-2.5 text-right">
-                  @if (editingId() === fee.id) {
-                    <input type="number" min="0" step="0.01"
-                      class="w-24 rounded-md border border-indigo-300 bg-white px-2 py-1 text-right text-xs outline-none"
-                      [(ngModel)]="editAmount"/>
-                  } @else {
-                    <span class="font-bold text-gray-900">{{ money(fee.amount) }}</span>
-                  }
-                </td>
-                <td class="px-4 py-2.5">
-                  <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-                    [class]="fee.paid ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
-                    {{ fee.paid ? 'Paid' : 'Unpaid' }}
-                  </span>
-                </td>
-                <td class="px-4 py-2.5 text-gray-600">
-                  {{ fee.paidDate ? (fee.paidDate | date: 'dd MMM yyyy') : '—' }}
-                </td>
-                <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                  @if (editingId() === fee.id) {
-                    <button class="mr-3 text-xs font-bold text-green-600 hover:underline cursor-pointer" (click)="saveEdit(fee)">Save</button>
-                    <button class="text-xs font-bold text-gray-500 hover:underline cursor-pointer" (click)="cancelEdit()">Cancel</button>
-                  } @else {
-                    <button class="mr-3 text-xs font-bold hover:underline cursor-pointer"
-                      [class]="fee.paid ? 'text-amber-600' : 'text-green-600'"
-                      (click)="togglePaid(fee)">
-                      {{ fee.paid ? 'Mark Unpaid' : 'Mark Paid' }}
-                    </button>
-                    <button class="mr-3 text-xs font-bold text-indigo-600 hover:underline cursor-pointer" (click)="startEdit(fee)">Edit</button>
-                    <button class="text-xs font-bold text-red-500 hover:underline cursor-pointer" (click)="askDelete(fee)">Delete</button>
-                  }
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="9" class="px-4 py-12 text-center text-sm font-semibold text-gray-400">
-                  Nothing billed for {{ month() }} — use <strong>Add Fee</strong> for one student,
-                  or <strong>Bill Everyone</strong> for the whole school
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
+    } @else if (!visible().length) {
+      <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">
+        Nothing billed for {{ month() }} — use <strong>Add Fee</strong> for one student,
+        or <strong>Bill Everyone</strong> for the whole school
       </div>
+    } @else {
+      <ag-grid-angular style="width: 100%;" [gridOptions]="gridOptions" [rowData]="visible()"
+        [columnDefs]="columnDefs" (cellValueChanged)="onAmountChanged($event)"></ag-grid-angular>
+      <p class="px-2 py-2 text-[11px] text-gray-400">Double-click an amount to edit it.</p>
     }
   </div>
 </div>
@@ -261,24 +170,16 @@
       <div class="flex flex-col gap-4 px-5 py-5">
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-600">Section</label>
-          <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-            [(ngModel)]="entryForm.sectionId" (ngModelChange)="onEntrySectionChange()">
-            <option [ngValue]="''">All sections</option>
-            @for (section of sections(); track section.id) {
-              <option [ngValue]="section.id">{{ section.name }}</option>
-            }
-          </select>
+          <ng-select [items]="sections()" bindLabel="label" bindValue="id" placeholder="All sections"
+            [(ngModel)]="entryForm.sectionId" (ngModelChange)="onEntrySectionChange()"></ng-select>
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-600">Student *</label>
-          <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
+          <ng-select [items]="entryStudents()" bindValue="id" placeholder="Select student"
             [(ngModel)]="entryForm.studentId">
-            <option [ngValue]="''">Pick a student…</option>
-            @for (student of entryStudents(); track student.id) {
-              <option [ngValue]="student.id">{{ student.rollNo }} · {{ student.name }}</option>
-            }
-          </select>
+            <ng-template ng-option-tmp ng-label-tmp let-item="item">{{ item.rollNo }} — {{ item.name }}</ng-template>
+          </ng-select>
         </div>
 
         @if (pickedStudent(); as student) {
@@ -345,13 +246,8 @@
           </div>
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-gray-600">Section</label>
-            <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-              [(ngModel)]="generateForm.sectionId">
-              <option [ngValue]="''">All sections</option>
-              @for (section of sections(); track section.id) {
-                <option [ngValue]="section.id">{{ section.name }}</option>
-              }
-            </select>
+            <ng-select [items]="sections()" bindLabel="label" bindValue="id" placeholder="Every section"
+              [(ngModel)]="generateForm.sectionId"></ng-select>
           </div>
         </div>
 

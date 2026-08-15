@@ -15,46 +15,24 @@
     </button>
   </div>
 
-  <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+  <!-- Filter -->
+  <div class="flex flex-wrap items-end gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3">
+    <label class="flex flex-col gap-1">
+      <span class="text-xs font-semibold text-gray-500">Class</span>
+      <ng-select class="w-52" [items]="classes()" bindLabel="name" bindValue="id"
+        placeholder="All classes" [ngModel]="filterClassId() || null" (ngModelChange)="onFilterClassChange($event)">
+      </ng-select>
+    </label>
+  </div>
+
+  <!-- Grid -->
+  <div class="rounded-2xl border border-gray-100 bg-white p-2">
     @if (loading()) {
       <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">Loading sections…</div>
+    } @else if (!sections().length) {
+      <div class="px-4 py-12 text-center text-sm font-semibold text-gray-400">No sections yet — add one to get started</div>
     } @else {
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="bg-gray-50 text-left text-[11px] font-bold tracking-wider text-gray-500 uppercase">
-              <th class="px-4 py-3">Section</th>
-              <th class="px-4 py-3">Students</th>
-              <th class="px-4 py-3">Status</th>
-              <th class="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (section of sections(); track section.id) {
-              <tr class="border-t border-gray-100 hover:bg-gray-50">
-                <td class="px-4 py-3 font-bold text-gray-900">{{ section.name }}</td>
-                <td class="px-4 py-3 text-gray-600">{{ section.studentCount ?? 0 }}</td>
-                <td class="px-4 py-3">
-                  <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-                    [class]="section.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
-                    {{ section.status === 'ACTIVE' ? 'Active' : 'Inactive' }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-right whitespace-nowrap">
-                  <button class="mr-3 text-xs font-bold text-indigo-600 hover:underline cursor-pointer" (click)="openEdit(section)">Edit</button>
-                  <button class="text-xs font-bold text-red-500 hover:underline cursor-pointer" (click)="askDelete(section)">Delete</button>
-                </td>
-              </tr>
-            } @empty {
-              <tr>
-                <td colspan="4" class="px-4 py-12 text-center text-sm font-semibold text-gray-400">
-                  No sections yet — add one before adding students
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      <ag-grid-angular style="width: 100%;" [gridOptions]="gridOptions" [rowData]="sections()" [columnDefs]="columnDefs"></ag-grid-angular>
     }
   </div>
 </div>
@@ -73,19 +51,31 @@
 
       <div class="flex flex-col gap-4 px-5 py-5">
         <div class="flex flex-col gap-1">
+          <label class="text-xs font-semibold text-gray-600">Class *</label>
+          <ng-select [items]="classes()" bindLabel="name" bindValue="id" placeholder="Select class"
+            [class.is-invalid]="errors()['classId']"
+            [(ngModel)]="form.classId" (ngModelChange)="revalidate()">
+          </ng-select>
+          @if (errors()['classId']) { <span class="text-[11px] font-semibold text-rose-600">{{ errors()['classId'] }}</span> }
+          @if (!classes().length) {
+            <span class="rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800">
+              No classes yet — add one under <strong>Classes</strong> first.
+            </span>
+          }
+        </div>
+        <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-600">Section Name *</label>
-          <input type="text" placeholder="10-A"
-            class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-            [(ngModel)]="form.name"/>
+          <input type="text" placeholder="A" [class]="inputClass('name')"
+            [(ngModel)]="form.name" (ngModelChange)="revalidate()"/>
+          @if (errors()['name']) { <span class="text-[11px] font-semibold text-rose-600">{{ errors()['name'] }}</span> }
+          <span class="text-[11px] text-gray-400">Just the division letter — the class is picked above, so this becomes e.g. 10-A.</span>
         </div>
         @if (editing()) {
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-gray-600">Status</label>
-            <select class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:bg-white"
+            <ng-select [items]="statuses" bindLabel="label" bindValue="value" [clearable]="false"
               [(ngModel)]="form.status">
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-            </select>
+            </ng-select>
           </div>
         }
       </div>

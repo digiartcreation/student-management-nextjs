@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { monthKey, money } from "@/validations/common";
-import { studentSchema } from "@/validations/student.schema";
+import { BLOOD_GROUPS, studentSchema } from "@/validations/student.schema";
+import { sectionSchema } from "@/validations/section.schema";
+import { classSchema } from "@/validations/class.schema";
 import { feeGenerateSchema, feeSchema } from "@/validations/fee.schema";
 import { attendanceSaveSchema } from "@/validations/attendance.schema";
 import { billedMonthOf } from "@/utils/fee";
@@ -31,7 +33,20 @@ describe("money", () => {
 });
 
 describe("studentSchema", () => {
-  const valid = { rollNo: "R101", name: "Rahul Kumar", age: 15, sectionId: 1, parentMobile: "9876543210" };
+  const valid = {
+    rollNo: "R101",
+    name: "Rahul Kumar",
+    age: 15,
+    sectionId: 1,
+    parentMobile: "9876543210",
+    fatherName: "Suresh Kumar",
+    motherName: "Lata Kumar",
+    fatherMobile: "9876543210",
+    motherMobile: "9876543211",
+    address: "12 Gandhi Street, Chennai",
+    bloodGroup: "O+",
+    joiningDate: "2026-06-01",
+  };
 
   it("accepts a valid student", () => {
     expect(studentSchema.parse(valid).name).toBe("Rahul Kumar");
@@ -48,6 +63,67 @@ describe("studentSchema", () => {
 
   it("rejects a malformed mobile", () => {
     expect(studentSchema.safeParse({ ...valid, parentMobile: "12345" }).success).toBe(false);
+  });
+
+  it("requires every guardian field", () => {
+    for (const field of ["fatherName", "motherName", "fatherMobile", "motherMobile"] as const) {
+      const without: Record<string, unknown> = { ...valid };
+      delete without[field];
+      expect(studentSchema.safeParse(without).success).toBe(false);
+    }
+  });
+
+  it("rejects a mobile on any of the three contact fields", () => {
+    for (const field of ["parentMobile", "fatherMobile", "motherMobile"] as const) {
+      expect(studentSchema.safeParse({ ...valid, [field]: "abc" }).success).toBe(false);
+    }
+  });
+
+  it("accepts only the eight real blood groups", () => {
+    for (const group of BLOOD_GROUPS) {
+      expect(studentSchema.safeParse({ ...valid, bloodGroup: group }).success).toBe(true);
+    }
+    expect(studentSchema.safeParse({ ...valid, bloodGroup: "C+" }).success).toBe(false);
+    expect(studentSchema.safeParse({ ...valid, bloodGroup: "" }).success).toBe(false);
+  });
+
+  it("rejects a joining date in the future", () => {
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    expect(studentSchema.safeParse({ ...valid, joiningDate: tomorrow }).success).toBe(false);
+  });
+
+  it("rejects a name made of digits or symbols", () => {
+    expect(studentSchema.safeParse({ ...valid, name: "12345" }).success).toBe(false);
+    expect(studentSchema.safeParse({ ...valid, fatherName: "<script>" }).success).toBe(false);
+  });
+
+  it("requires an address of a usable length", () => {
+    expect(studentSchema.safeParse({ ...valid, address: "abc" }).success).toBe(false);
+    expect(studentSchema.safeParse({ ...valid, address: "x".repeat(501) }).success).toBe(false);
+  });
+});
+
+describe("sectionSchema", () => {
+  it("requires a class", () => {
+    expect(sectionSchema.safeParse({ name: "A" }).success).toBe(false);
+    expect(sectionSchema.safeParse({ classId: 1, name: "A" }).success).toBe(true);
+  });
+
+  it("rejects a blank or over-long name", () => {
+    expect(sectionSchema.safeParse({ classId: 1, name: "  " }).success).toBe(false);
+    expect(sectionSchema.safeParse({ classId: 1, name: "A".repeat(21) }).success).toBe(false);
+  });
+});
+
+describe("classSchema", () => {
+  it("accepts a year group name", () => {
+    expect(classSchema.parse({ name: "10" }).name).toBe("10");
+    expect(classSchema.parse({ name: "LKG" }).name).toBe("LKG");
+  });
+
+  it("rejects a blank name or stray punctuation", () => {
+    expect(classSchema.safeParse({ name: "" }).success).toBe(false);
+    expect(classSchema.safeParse({ name: "10/A" }).success).toBe(false);
   });
 });
 

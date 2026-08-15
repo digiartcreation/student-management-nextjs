@@ -3,16 +3,61 @@
 // except `month`, which is a plain "YYYY-MM" key.
 
 export type RecordStatus = 'ACTIVE' | 'INACTIVE';
+
+/** ng-select needs objects to bind against, so the two statuses are listed once here. */
+export const STATUS_OPTIONS: Array<{ value: RecordStatus; label: string }> = [
+  { value: 'ACTIVE', label: 'Active' },
+  { value: 'INACTIVE', label: 'Inactive' },
+];
+
+/** The same list plus an "all" entry, for filter bars. */
+export const STATUS_FILTER_OPTIONS: Array<{ value: RecordStatus | ''; label: string }> = [
+  { value: '', label: 'All statuses' },
+  ...STATUS_OPTIONS,
+];
 export type AttendanceStatus = 'PRESENT' | 'LATE' | 'ABSENT';
 export type RosterStatus = AttendanceStatus | 'NOT_MARKED';
 
 export const ATTENDANCE_STATUSES: AttendanceStatus[] = ['PRESENT', 'LATE', 'ABSENT'];
 
-export interface Section {
+/** The eight groups the API accepts; anything else is rejected. */
+export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
+export type BloodGroup = (typeof BLOOD_GROUPS)[number];
+
+/** A year group — "10", "9", "LKG". Sections belong to one. */
+export interface ClassGroup {
   id: number;
   name: string;
   status: RecordStatus;
+  sectionCount?: number;
   studentCount?: number;
+  sections?: Section[];
+}
+
+export interface ClassPayload {
+  name: string;
+  status?: RecordStatus;
+}
+
+/**
+ * A division within a class. `name` is now just the letter ("A"); `label` is the
+ * familiar "10-A" the API rebuilds from the pair, so screens keep showing
+ * something recognisable without re-joining the halves themselves.
+ */
+export interface Section {
+  id: number;
+  classId: number;
+  name: string;
+  label?: string;
+  status: RecordStatus;
+  studentCount?: number;
+  class?: ClassGroup;
+}
+
+export interface SectionPayload {
+  classId: number;
+  name: string;
+  status?: RecordStatus;
 }
 
 export interface Student {
@@ -22,6 +67,13 @@ export interface Student {
   age: number;
   sectionId: number;
   parentMobile: string;
+  fatherName: string;
+  motherName: string;
+  fatherMobile: string;
+  motherMobile: string;
+  address: string;
+  bloodGroup: string;
+  joiningDate: string;
   status: RecordStatus;
   section?: Section;
 }
@@ -32,6 +84,13 @@ export interface StudentPayload {
   age: number;
   sectionId: number;
   parentMobile: string;
+  fatherName: string;
+  motherName: string;
+  fatherMobile: string;
+  motherMobile: string;
+  address: string;
+  bloodGroup: string;
+  joiningDate: string;
   status?: RecordStatus;
 }
 
