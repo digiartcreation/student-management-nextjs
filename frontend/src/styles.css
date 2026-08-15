@@ -85,12 +85,35 @@
    lifted while it is actually open; dialogs then sit above both. An ng-select
    inside a dialog still renders correctly because it shares that dialog's
    stacking context rather than competing with it. */
+/* One scale for the whole app, so nothing is decided by a stray number:
+     ng-select (open) 1050 · its panel 1060 · mobile menu button 1100
+     sidebar backdrop 1200 · sidebar 1300 · dialogs 2000 · toasts 2500
+   Anything below 1050 loses to an open dropdown, which is what put the filter
+   bar on top of the sidebar and the dialogs on a phone. */
 .ng-select { z-index: auto; }
 .ng-select.ng-select-opened,
 .ng-select.ng-select-focused { z-index: 1050; }
 .ng-dropdown-panel { z-index: 1060; }
+.app-menu-button { z-index: 1100; }
+.app-sidebar-backdrop { z-index: 1200; }
+.app-sidebar { z-index: 1300; }
 /* Every modal overlay in the app. */
 .app-modal { z-index: 2000; }
+
+/* ── Mobile viewport ────────────────────────────────────────────────────────
+   100vh counts the browser's collapsing address bar, so on a phone the shell
+   is taller than what is actually visible and the last rows sit below the fold
+   with nothing left to scroll. dvh tracks the visible area instead; the vh
+   line stays first as the fallback for browsers without it. */
+.app-shell { height: 100vh; height: 100dvh; }
+
+/* Breathing room under the last row, plus the home-indicator inset on notched
+   phones — without it the final row is flush against the edge and reads as cut
+   off even once it is reachable. */
+.app-main { padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 1023px) {
+  .app-main { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
+}
 
 /* ag-grid: let the action buttons inside a cell look clickable. */
 .ag-theme-quartz .ag-cell button, .ag-cell button { cursor: pointer; }

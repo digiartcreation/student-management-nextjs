@@ -2,7 +2,9 @@
   position: fixed;
   top: 1.25rem;
   right: 1.25rem;
-  z-index: 2000;
+  /* Above dialogs (2000): a toast raised by a dialog's own action has to be
+     readable, and at an equal z-index it was DOM order deciding. */
+  z-index: 2500;
   display: flex;
   flex-direction: column;
   gap: .6rem;

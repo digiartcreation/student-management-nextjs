@@ -1,11 +1,11 @@
-<div class="flex h-screen overflow-hidden bg-[#edf0f8]">
+<div class="app-shell flex overflow-hidden bg-[#edf0f8]">
   @if (sidebarOpen()) {
-    <div class="fixed inset-0 z-40 bg-black/55" (click)="sidebarOpen.set(false)"></div>
+    <div class="app-sidebar-backdrop fixed inset-0 bg-black/55" (click)="sidebarOpen.set(false)"></div>
   }
 
   <!-- ── SIDEBAR ──────────────────────────────────────────────── -->
   <aside
-    class="flex w-60 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#1e1b4b] to-[#0f0e2e] fixed top-0 bottom-0 left-0 z-50 transition-[transform,width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:relative lg:top-auto lg:bottom-auto lg:left-auto"
+    class="flex w-60 shrink-0 flex-col overflow-hidden bg-gradient-to-b from-[#1e1b4b] to-[#0f0e2e] app-sidebar fixed top-0 bottom-0 left-0 transition-[transform,width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:relative lg:top-auto lg:bottom-auto lg:left-auto"
     [ngClass]="{
       'translate-x-0': sidebarOpen(),
       '-translate-x-full lg:translate-x-0': !sidebarOpen(),
@@ -113,14 +113,14 @@
   <!-- ── MAIN AREA ────────────────────────────────────────────── -->
   <div class="flex min-w-0 flex-1 flex-col overflow-hidden">
     <button
-      class="fixed top-3 left-3 z-45 flex h-9 w-9 items-center justify-center rounded-md bg-white text-gray-500 shadow-[0_1px_4px_rgba(0,0,0,0.15)] transition hover:bg-gray-100 lg:hidden"
+      class="app-menu-button fixed top-3 left-3 flex h-9 w-9 items-center justify-center rounded-md bg-white text-gray-500 shadow-[0_1px_4px_rgba(0,0,0,0.15)] transition hover:bg-gray-100 lg:hidden"
       (click)="sidebarOpen.set(true)">
       <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
 
-    <main class="flex-1 overflow-y-auto overflow-x-hidden bg-[#f0f2f9] p-[1.2rem] pt-16 lg:pt-[1.2rem]">
+    <main class="app-main flex-1 overflow-y-auto overflow-x-hidden bg-[#f0f2f9] p-[1.2rem] pt-16 lg:pt-[1.2rem]">
       <router-outlet/>
     </main>
   </div>
