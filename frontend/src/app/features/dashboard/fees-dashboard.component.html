@@ -1,0 +1,144 @@
+<div class="flex flex-col gap-5">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 class="m-0 text-xl font-extrabold text-gray-900">Fees Dashboard</h2>
+      <p class="mt-0.5 text-sm text-gray-500">Collection status for the selected month</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs">
+        <span class="font-semibold text-gray-500">Month</span>
+        <input type="month"
+          class="border-none bg-transparent text-xs font-semibold text-gray-800 outline-none cursor-pointer"
+          [ngModel]="month()" (ngModelChange)="month.set($event); load()"/>
+      </div>
+      <a routerLink="/fees" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-indigo-600 no-underline hover:bg-indigo-50">
+        Manage fees →
+      </a>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="rounded-2xl border border-gray-100 bg-white px-4 py-16 text-center text-sm font-semibold text-gray-400">
+      Loading…
+    </div>
+  } @else if (dashboard(); as board) {
+
+    <!-- KPI tiles -->
+    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div class="rounded-2xl border border-gray-100 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+        <div class="text-[0.7rem] font-bold tracking-wider text-gray-500 uppercase">Billed</div>
+        <div class="mt-1 text-2xl font-black text-gray-900">{{ money(board.total) }}</div>
+        <div class="mt-0.5 text-xs text-gray-400">{{ board.billedStudents }} of {{ board.activeStudents }} students</div>
+      </div>
+      <div class="rounded-2xl border border-green-100 bg-green-50/60 p-4">
+        <div class="text-[0.7rem] font-bold tracking-wider text-green-700 uppercase">Collected</div>
+        <div class="mt-1 text-2xl font-black text-green-800">{{ money(board.collected) }}</div>
+        <div class="mt-0.5 text-xs text-green-700/70">{{ board.paidStudents }} paid</div>
+      </div>
+      <div class="rounded-2xl border border-red-100 bg-red-50/60 p-4">
+        <div class="text-[0.7rem] font-bold tracking-wider text-red-700 uppercase">Pending</div>
+        <div class="mt-1 text-2xl font-black text-red-800">{{ money(board.pending) }}</div>
+        <div class="mt-0.5 text-xs text-red-700/70">{{ board.unpaidStudents }} unpaid</div>
+      </div>
+      <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4">
+        <div class="text-[0.7rem] font-bold tracking-wider text-indigo-700 uppercase">Collection</div>
+        <div class="mt-1 text-2xl font-black text-indigo-800">{{ board.collectionPercentage }}%</div>
+        <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-indigo-200">
+          <div class="h-full rounded-full bg-indigo-600" [style.width.%]="board.collectionPercentage"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What the month is made of. A quarter counts in its first month and a
+         year in January, so each fee lands here exactly once. -->
+    @if (activeTypes().length > 1) {
+      <div class="flex flex-wrap gap-2">
+        @for (row of activeTypes(); track row.feeType) {
+          <span class="flex items-center gap-2 rounded-xl border border-gray-100 bg-white px-3 py-2 text-xs shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+            <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="typeClass(row.feeType)">
+              {{ typeLabels[row.feeType] }}
+            </span>
+            <span class="font-bold text-gray-900">{{ money(row.total) }}</span>
+            <span class="text-green-600">{{ money(row.collected) }} in</span>
+            <span class="text-red-500">{{ money(row.pending) }} out</span>
+          </span>
+        }
+      </div>
+    }
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <!-- 6-month trend -->
+      <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+        <h3 class="m-0 text-sm font-bold text-gray-900">Last 6 months</h3>
+        <p class="mt-0.5 mb-4 text-xs text-gray-400">Billed vs collected</p>
+
+        <div class="flex h-48 items-end justify-between gap-3">
+          @for (row of board.trend; track row.month) {
+            <div class="flex flex-1 flex-col items-center gap-2">
+              <div class="relative flex h-40 w-full items-end justify-center">
+                <div class="relative w-full max-w-[42px] overflow-hidden rounded-t-md bg-indigo-100"
+                     [style.height]="barHeight(row.total)"
+                     [title]="'Billed ' + money(row.total)">
+                  <div class="absolute bottom-0 left-0 w-full bg-indigo-600"
+                       [style.height]="collectedHeight(row)"
+                       [title]="'Collected ' + money(row.collected)"></div>
+                </div>
+              </div>
+              <span class="text-[11px] font-bold text-gray-500">{{ monthLabel(row.month) }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="mt-4 flex items-center gap-4 border-t border-gray-100 pt-3 text-[11px] font-semibold text-gray-500">
+          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-indigo-600"></span> Collected</span>
+          <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-indigo-100"></span> Outstanding</span>
+        </div>
+      </div>
+
+      <!-- Unpaid list -->
+      <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+        <div class="border-b border-gray-100 px-5 py-4">
+          <h3 class="m-0 text-sm font-bold text-gray-900">Unpaid this month</h3>
+          <p class="mt-0.5 text-xs text-gray-400">Largest outstanding first</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 text-left text-[11px] font-bold tracking-wider text-gray-500 uppercase">
+                <th class="px-5 py-2.5">Roll No</th>
+                <th class="px-5 py-2.5">Student</th>
+                <th class="px-5 py-2.5">Section</th>
+                <th class="px-5 py-2.5">Fee</th>
+                <th class="px-5 py-2.5 text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of board.topUnpaid; track row.id) {
+                <tr class="border-t border-gray-100">
+                  <td class="px-5 py-2.5 font-mono text-xs text-gray-600">{{ row.rollNo }}</td>
+                  <td class="px-5 py-2.5 font-semibold text-gray-900">{{ row.name }}</td>
+                  <td class="px-5 py-2.5 text-gray-600">{{ row.section }}</td>
+                  <td class="px-5 py-2.5 whitespace-nowrap">
+                    <span class="mr-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="typeClass(row.feeType)">
+                      {{ typeLabels[row.feeType] }}
+                    </span>
+                    <span class="text-xs text-gray-500">{{ periodLabel(row) }}</span>
+                  </td>
+                  <td class="px-5 py-2.5 text-right font-bold text-red-600">{{ money(row.amount) }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="5" class="px-5 py-10 text-center text-sm font-semibold text-gray-400">
+                    Everyone has paid for {{ board.month }} 🎉
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+</div>

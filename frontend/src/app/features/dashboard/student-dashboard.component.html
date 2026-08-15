@@ -1,0 +1,302 @@
+<div class="flex flex-col gap-5">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h2 class="m-0 text-xl font-extrabold text-gray-900">Student Dashboard</h2>
+      <p class="mt-0.5 text-sm text-gray-500">
+        Attendance and fees for one student, or several side by side
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs">
+        <span class="font-semibold text-gray-500">Month</span>
+        <input type="month"
+          class="border-none bg-transparent text-xs font-semibold text-gray-800 outline-none cursor-pointer"
+          [ngModel]="month()" (ngModelChange)="month.set($event); load()"/>
+      </div>
+      <a routerLink="/students" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-indigo-600 no-underline hover:bg-indigo-50">
+        Manage students →
+      </a>
+    </div>
+  </div>
+
+  <!-- Student picker -->
+  <div class="relative rounded-2xl border border-gray-100 bg-white px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-xs font-bold tracking-wider text-gray-500 uppercase">Students</span>
+
+      @for (student of selectedStudents(); track student.id) {
+        <span class="flex items-center gap-1.5 rounded-full bg-indigo-50 py-1 pr-1 pl-3 text-xs font-bold text-indigo-700">
+          {{ student.rollNo }} · {{ student.name }}
+          <button
+            class="flex h-5 w-5 items-center justify-center rounded-full text-indigo-400 hover:bg-indigo-100 hover:text-indigo-700 cursor-pointer"
+            [attr.aria-label]="'Remove ' + student.name"
+            (click)="toggle(student.id)">
+            <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </span>
+      } @empty {
+        <span class="text-sm text-gray-400">None picked yet</span>
+      }
+
+      <button
+        class="ml-auto flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white transition hover:bg-indigo-700 cursor-pointer"
+        (click)="togglePicker()">
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        {{ pickerOpen() ? 'Done' : 'Pick students' }}
+      </button>
+
+      @if (selectedStudents().length) {
+        <button class="text-xs font-bold text-gray-400 hover:text-red-500 hover:underline cursor-pointer"
+          (click)="clearSelection()">
+          Clear
+        </button>
+      }
+    </div>
+
+    @if (pickerOpen()) {
+      <!-- Click-away backdrop, kept behind the panel it closes. -->
+      <div class="fixed inset-0 z-10" (click)="closePicker()"></div>
+
+      <div class="absolute right-4 z-20 mt-2 flex max-h-[22rem] w-[22rem] flex-col rounded-xl border border-gray-200 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+        <div class="flex flex-col gap-2 border-b border-gray-100 p-3">
+          <input type="text" placeholder="Search name or roll no"
+            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
+            [ngModel]="pickerSearch()" (ngModelChange)="pickerSearch.set($event)"/>
+          <select
+            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
+            [ngModel]="sectionFilter()" (ngModelChange)="sectionFilter.set($event)">
+            <option [ngValue]="''">All sections</option>
+            @for (section of sections(); track section.id) {
+              <option [ngValue]="section.id">{{ section.name }}</option>
+            }
+          </select>
+          <span class="text-[11px] text-gray-400">
+            {{ selectedIds().length }} of {{ maxStudents }} picked — each one gets its own dashboard below
+          </span>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-1.5">
+          @for (student of pickable(); track student.id) {
+            <label class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-gray-50"
+              [class.opacity-40]="atLimit() && !isSelected(student.id)">
+              <input type="checkbox" class="cursor-pointer accent-indigo-600"
+                [checked]="isSelected(student.id)"
+                [disabled]="atLimit() && !isSelected(student.id)"
+                (change)="toggle(student.id)"/>
+              <span class="font-mono text-[11px] text-gray-500">{{ student.rollNo }}</span>
+              <span class="flex-1 truncate text-sm font-semibold text-gray-800">{{ student.name }}</span>
+              <span class="text-[11px] text-gray-400">{{ student.section?.name }}</span>
+            </label>
+          } @empty {
+            <div class="px-3 py-8 text-center text-sm font-semibold text-gray-400">No students match</div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="rounded-2xl border border-gray-100 bg-white px-4 py-16 text-center text-sm font-semibold text-gray-400">
+      Loading…
+    </div>
+  } @else if (!cards().length) {
+    <div class="rounded-2xl border border-gray-100 bg-white px-4 py-16 text-center">
+      <p class="m-0 text-sm font-semibold text-gray-500">Pick a student to see their dashboard</p>
+      <p class="mt-1 text-xs text-gray-400">Pick more than one and they line up side by side for comparison</p>
+    </div>
+  } @else {
+    <!-- One dashboard per student. Two across once there is more than one. -->
+    <div class="grid gap-4" [class]="cards().length > 1 ? 'xl:grid-cols-2' : ''">
+      @for (card of cards(); track card.board.student.id) {
+        <div class="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+
+          <!-- Who -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 bg-gray-50/60 px-5 py-3.5">
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-sm font-black text-white">
+                {{ card.board.student.name.charAt(0) }}
+              </div>
+              <div>
+                <div class="text-sm font-extrabold text-gray-900">{{ card.board.student.name }}</div>
+                <div class="text-[11px] text-gray-500">
+                  {{ card.board.student.rollNo }} · {{ card.board.student.section }} ·
+                  Age {{ card.board.student.age }} · {{ card.board.student.parentMobile }}
+                </div>
+              </div>
+            </div>
+            <span class="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
+              [class]="card.board.student.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'">
+              {{ card.board.student.status }}
+            </span>
+          </div>
+
+          <!-- KPIs -->
+          <div class="grid grid-cols-2 gap-3 px-5 py-4 md:grid-cols-4">
+            <div class="rounded-xl border border-green-100 bg-green-50/60 p-3">
+              <div class="text-[0.65rem] font-bold tracking-wider text-green-700 uppercase">Attendance</div>
+              <div class="mt-0.5 text-lg font-black text-green-800">{{ card.board.attendance.month.attendancePercentage }}%</div>
+              <div class="text-[10px] text-green-700/70">{{ card.board.attendance.month.marked }} days marked</div>
+            </div>
+            <div class="rounded-xl border border-red-100 bg-red-50/60 p-3">
+              <div class="text-[0.65rem] font-bold tracking-wider text-red-700 uppercase">Absent / Late</div>
+              <div class="mt-0.5 text-lg font-black text-red-800">
+                {{ card.board.attendance.month.absent }} / {{ card.board.attendance.month.late }}
+              </div>
+              <div class="text-[10px] text-red-700/70">this month</div>
+            </div>
+            <div class="rounded-xl border border-gray-100 bg-white p-3">
+              <div class="text-[0.65rem] font-bold tracking-wider text-gray-500 uppercase">Billed</div>
+              <div class="mt-0.5 text-lg font-black text-gray-900">{{ money(card.board.fees.totals.total) }}</div>
+              <div class="text-[10px] text-gray-400">lifetime</div>
+            </div>
+            <div class="rounded-xl border p-3"
+              [class]="card.board.fees.totals.unpaidCount ? 'border-red-100 bg-red-50/60' : 'border-green-100 bg-green-50/60'">
+              <div class="text-[0.65rem] font-bold tracking-wider uppercase"
+                [class]="card.board.fees.totals.unpaidCount ? 'text-red-700' : 'text-green-700'">Pending</div>
+              <div class="mt-0.5 text-lg font-black"
+                [class]="card.board.fees.totals.unpaidCount ? 'text-red-800' : 'text-green-800'">
+                {{ money(card.board.fees.totals.pending) }}
+              </div>
+              <div class="text-[10px]"
+                [class]="card.board.fees.totals.unpaidCount ? 'text-red-700/70' : 'text-green-700/70'">
+                {{ card.board.fees.totals.unpaidCount }} unpaid
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="grid gap-4 border-t border-gray-100 px-5 py-4 md:grid-cols-2">
+            <div>
+              <h4 class="m-0 text-xs font-bold text-gray-900">This month</h4>
+              <p class="mt-0.5 mb-1 text-[11px] text-gray-400">Present, late and absent days</p>
+              @if (!card.board.attendance.month.marked) {
+                <!-- An all-zero donut draws as an empty ring, which reads as broken. -->
+                <div class="flex h-[230px] items-center justify-center rounded-xl bg-gray-50 text-xs font-semibold text-gray-400">
+                  No attendance marked this month
+                </div>
+              } @else {
+              <apx-chart
+                [series]="card.charts.donut.series"
+                [chart]="card.charts.donut.chart"
+                [labels]="card.charts.donut.labels"
+                [colors]="card.charts.donut.colors"
+                [legend]="card.charts.donut.legend"
+                [dataLabels]="card.charts.donut.dataLabels"
+                [plotOptions]="card.charts.donut.plotOptions"
+                [tooltip]="card.charts.donut.tooltip"/>
+              }
+            </div>
+
+            <div>
+              <h4 class="m-0 text-xs font-bold text-gray-900">Fees collected</h4>
+              <p class="mt-0.5 mb-1 text-[11px] text-gray-400">Share of everything ever billed</p>
+              <apx-chart
+                [series]="card.charts.gauge.series"
+                [chart]="card.charts.gauge.chart"
+                [labels]="card.charts.gauge.labels"
+                [colors]="card.charts.gauge.colors"
+                [plotOptions]="card.charts.gauge.plotOptions"
+                [fill]="card.charts.gauge.fill"/>
+            </div>
+
+            <div>
+              <h4 class="m-0 text-xs font-bold text-gray-900">Attendance trend</h4>
+              <p class="mt-0.5 mb-1 text-[11px] text-gray-400">Last 6 months</p>
+              <apx-chart
+                [series]="card.charts.area.series"
+                [chart]="card.charts.area.chart"
+                [colors]="card.charts.area.colors"
+                [xaxis]="card.charts.area.xaxis"
+                [yaxis]="card.charts.area.yaxis"
+                [stroke]="card.charts.area.stroke"
+                [fill]="card.charts.area.fill"
+                [grid]="card.charts.area.grid"
+                [dataLabels]="card.charts.area.dataLabels"
+                [tooltip]="card.charts.area.tooltip"/>
+            </div>
+
+            <div>
+              <h4 class="m-0 text-xs font-bold text-gray-900">Fees trend</h4>
+              <p class="mt-0.5 mb-1 text-[11px] text-gray-400">Billed vs collected, last 6 months</p>
+              <apx-chart
+                [series]="card.charts.column.series"
+                [chart]="card.charts.column.chart"
+                [colors]="card.charts.column.colors"
+                [xaxis]="card.charts.column.xaxis"
+                [yaxis]="card.charts.column.yaxis"
+                [grid]="card.charts.column.grid"
+                [legend]="card.charts.column.legend"
+                [plotOptions]="card.charts.column.plotOptions"
+                [dataLabels]="card.charts.column.dataLabels"
+                [tooltip]="card.charts.column.tooltip"/>
+            </div>
+          </div>
+
+          <!-- Fee split by type -->
+          @if (card.board.fees.byType.length) {
+            <div class="flex flex-wrap gap-2 border-t border-gray-100 px-5 py-3">
+              @for (row of card.board.fees.byType; track row.feeType) {
+                @if (row.count) {
+                  <span class="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/60 px-2.5 py-1.5 text-[11px]">
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="typeClass(row.feeType)">
+                      {{ typeLabels[row.feeType] }}
+                    </span>
+                    <span class="font-bold text-gray-900">{{ money(row.total) }}</span>
+                    @if (hasPending(row)) {
+                      <span class="text-red-500">{{ money(row.pending) }} due</span>
+                    }
+                  </span>
+                }
+              }
+            </div>
+          }
+
+          <!-- What is outstanding -->
+          <div class="grid gap-4 border-t border-gray-100 px-5 py-4 md:grid-cols-2">
+            <div>
+              <h4 class="m-0 mb-2 text-xs font-bold text-gray-900">Unpaid fees</h4>
+              @for (fee of card.board.fees.unpaid; track fee.id) {
+                <div class="flex items-center justify-between border-b border-gray-50 py-1.5 last:border-0">
+                  <span class="flex items-center gap-1.5">
+                    <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold" [class]="typeClass(fee.feeType)">
+                      {{ typeLabels[fee.feeType] }}
+                    </span>
+                    <span class="text-[11px] text-gray-600">{{ feeLabel(fee) }}</span>
+                  </span>
+                  <span class="text-xs font-bold text-red-600">{{ money(fee.amount) }}</span>
+                </div>
+              } @empty {
+                <p class="m-0 py-3 text-[11px] font-semibold text-green-600">Nothing outstanding 🎉</p>
+              }
+            </div>
+
+            <div>
+              <h4 class="m-0 mb-2 text-xs font-bold text-gray-900">Recent absences &amp; lates</h4>
+              @for (row of card.board.attendance.recentAbsences; track row.date) {
+                <div class="flex items-center justify-between border-b border-gray-50 py-1.5 last:border-0">
+                  <span class="text-[11px] text-gray-600">{{ row.date | date: 'dd MMM yyyy' }}</span>
+                  <span class="flex items-center gap-2">
+                    @if (row.remarks) {
+                      <span class="max-w-[9rem] truncate text-[10px] text-gray-400">{{ row.remarks }}</span>
+                    }
+                    <span class="rounded-full px-2 py-0.5 text-[10px] font-bold" [class]="statusClass(row.status)">
+                      {{ row.status }}
+                    </span>
+                  </span>
+                </div>
+              } @empty {
+                <p class="m-0 py-3 text-[11px] font-semibold text-green-600">Present every marked day 🎉</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
