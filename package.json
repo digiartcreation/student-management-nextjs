@@ -1,5 +1,5 @@
 {
-  "name": "student-fee-management-backend",
+  "name": "student-fee-management",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,9 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "ui": "node scripts/sync-ui.mjs",
-    "ui:build": "npm --prefix ../student-management-frontend run build && npm run ui",
+    "ui:install": "npm --prefix frontend install",
+    "ui:dev": "npm --prefix frontend start",
+    "ui:build": "npm --prefix frontend run build && npm run ui",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -13,16 +13,21 @@ hosted; see [If the plan has no Node.js](#if-the-plan-has-no-nodejs).
 
 ## Build
 
-The Angular project is a sibling folder and is **not** part of this deployment,
-so `public/` is built here and uploaded as-is rather than rebuilt on the server.
+The Angular project lives in `frontend/` in this repo, but it is **not** built on
+the server — the deployment runs only `next build` and has no Angular toolchain.
+So `public/` is built locally, committed, and uploaded as-is.
 
 ```bash
+npm run ui:install   # once, to install frontend/ dependencies
 npm run ui:build     # builds the frontend, then copies it into public/
 npm run build        # next build
 ```
 
 `npm run ui:build` is the two steps together. To rebuild only the copy after
 building Angular yourself, `npm run ui`.
+
+Note that `npm install` at the root does **not** reach `frontend/` — it is a
+nested project, not an npm workspace. Run `npm run ui:install` after cloning.
 
 Check `public/index.html` exists before deploying — that file is the app.
 
@@ -33,7 +38,7 @@ In hPanel → your site → **Deployments**, either connect the Git repo or uplo
 the output directory is `.next`.
 
 `public/` must be included in what you upload. It is build output, but the
-server cannot regenerate it — the Angular source is not in this project.
+server cannot regenerate it — the deploy never runs the Angular build.
 
 Do the environment variables first. A deploy that starts without `DATABASE_URL`
 comes up and then fails every request, which reads like a broken build rather
@@ -109,8 +114,7 @@ Single and Premium plans serve static files only, so the API cannot run there.
 The frontend can still be hosted on Hostinger, with the API somewhere that runs
 Node (a Hostinger VPS, Render, Railway, Fly). In that case:
 
-1. Upload `../student-management-frontend/dist/student-fee-management/browser/`
-   to `public_html`.
+1. Upload `frontend/dist/student-fee-management/browser/` to `public_html`.
 2. Add `public_html/.htaccess` so Angular's routes survive a refresh:
 
    ```apache

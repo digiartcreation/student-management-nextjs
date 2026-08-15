@@ -2,16 +2,18 @@
  * Copies the built Angular app into `public/`, so `next start` serves the
  * screens and the API from one origin.
  *
- * Run it after building the frontend and before deploying. The frontend lives
- * in a sibling folder that is not part of this deployment, so `public/` is
- * uploaded as-is rather than rebuilt on the server.
+ * The frontend source lives in `frontend/` in this same repo, but it is not
+ * built on the server: the deployment only runs `prisma generate && next build`
+ * and has no Angular toolchain. So `public/` is committed and uploaded as-is,
+ * and this script is what refreshes it — run `npm run ui:build` locally after
+ * changing anything under `frontend/src`.
  */
 import { cp, rm, mkdir, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const source = path.resolve(root, "../student-management-frontend/dist/student-fee-management/browser");
+const source = path.resolve(root, "frontend/dist/student-fee-management/browser");
 const target = path.join(root, "public");
 
 const exists = async (dir) => {
@@ -25,7 +27,7 @@ const exists = async (dir) => {
 if (!(await exists(source))) {
   console.error(`No Angular build at:\n  ${source}\n`);
   console.error("Build the frontend first:");
-  console.error("  cd ../student-management-frontend && npm run build");
+  console.error("  npm run ui:build   (installs nothing — run npm run ui:install once)");
   process.exit(1);
 }
 

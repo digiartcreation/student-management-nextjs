@@ -34,7 +34,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
+  "//exclude": "frontend/ is the Angular app and type-checks against its own tsconfig.app.json. Without it here, `**/*.ts` drags 30-odd Angular files into the Next.js type-check.",
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "frontend"
   ]
 }
