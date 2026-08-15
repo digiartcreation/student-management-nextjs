@@ -73,7 +73,18 @@ export const feePaySchema = z.object({
   paidDate: z.coerce.date().optional().nullable(),
 });
 
-/** Filters for the fees list; every field narrows, none is required. */
+/**
+ * Filters for the fees list; every field narrows, none is required.
+ *
+ * `fromDate`/`toDate` bracket `paidDate`, not `billedMonth`. That is what a
+ * daily collection report asks for — money taken between two dates — and it is
+ * a different question from which month a charge was billed against. A fee
+ * billed in July but settled in August belongs to August's collection and to
+ * July's billing, so the two filters are deliberately kept separate.
+ *
+ * Because the bracket is on `paidDate`, which is null until a fee is settled,
+ * supplying either date implies paid rows only.
+ */
 export const feeQuerySchema = z.object({
   feeType: feeType.optional(),
   period: z.string().trim().optional(),
@@ -82,6 +93,8 @@ export const feeQuerySchema = z.object({
   studentId: id.optional(),
   paid: z.boolean().optional(),
   search: z.string().trim().optional(),
+  fromDate: z.coerce.date().optional(),
+  toDate: z.coerce.date().optional(),
 });
 
 export { FEE_TYPES };

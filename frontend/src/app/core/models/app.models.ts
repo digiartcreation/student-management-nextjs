@@ -63,6 +63,28 @@ export interface Roster {
   summary: AttendanceSummary;
 }
 
+/**
+ * A stored attendance row as the list endpoint returns it — one marked day for
+ * one student. Distinct from `RosterRow`, which is the fill screen's view and
+ * can be NOT_MARKED; anything listed here has definitively been marked.
+ */
+export interface AttendanceRecord {
+  id: number;
+  studentId: number;
+  date: string;
+  status: AttendanceStatus;
+  remarks: string | null;
+  student?: Student & { section?: Section };
+}
+
+export interface AttendancePage {
+  content: AttendanceRecord[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export type FeeType = 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'OTHER';
 
 export const FEE_TYPES: FeeType[] = ['MONTHLY', 'QUARTERLY', 'YEARLY', 'OTHER'];

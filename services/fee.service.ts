@@ -17,16 +17,33 @@ export async function listFees(filters: {
   studentId?: number;
   paid?: boolean;
   search?: string;
+  fromDate?: Date;
+  toDate?: Date;
   page: number;
   size: number;
   skip: number;
 }) {
+  // The date bracket is on `paidDate` — "money collected between these days" —
+  // so it answers the daily collection report. `toDate` is pushed to the end of
+  // its day because paidDate carries a time, and a plain `lte` on midnight
+  // would silently drop everything collected during the closing day.
+  const hasDateRange = Boolean(filters.fromDate || filters.toDate);
+  const endOfToDate = filters.toDate
+    ? new Date(new Date(filters.toDate).setHours(23, 59, 59, 999))
+    : undefined;
+
   const where: Prisma.FeeWhereInput = {
     feeType: filters.feeType,
     period: filters.period,
     billedMonth: filters.billedMonth,
     studentId: filters.studentId,
-    paid: filters.paid,
+    // An unpaid fee has no paidDate, so it can never fall inside the bracket.
+    // Saying so up front keeps the totals honest rather than leaving `paid`
+    // undefined and counting rows the date filter has already excluded.
+    paid: hasDateRange ? (filters.paid ?? true) : filters.paid,
+    ...(hasDateRange
+      ? { paidDate: { gte: filters.fromDate ?? undefined, lte: endOfToDate } }
+      : {}),
     student: {
       sectionId: filters.sectionId,
       ...(filters.search

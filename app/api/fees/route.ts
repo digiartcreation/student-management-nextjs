@@ -22,6 +22,8 @@ export const GET = route(async (request: NextRequest) => {
     studentId: toOptionalNumber(searchParams.get("studentId")),
     paid: paidParam === null || paidParam === "" ? undefined : paidParam === "true",
     search: toOptionalString(searchParams.get("search")),
+    fromDate: toOptionalString(searchParams.get("fromDate")),
+    toDate: toOptionalString(searchParams.get("toDate")),
   });
 
   const result = await listFees({ ...paging, ...filters });

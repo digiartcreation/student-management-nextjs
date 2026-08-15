@@ -5,6 +5,8 @@ import { API_BASE_URL } from '../../environments/environment';
 import { ApiEnvelope, pluckData } from '../utils/api-envelope';
 import {
   AttendanceDashboard,
+  AttendancePage,
+  AttendanceRecord,
   AttendanceStatus,
   Fee,
   FeePage,
@@ -109,6 +111,28 @@ export class DataService {
     return this.http.delete<void>(`${API_BASE_URL}/attendance/${id}`);
   }
 
+  /**
+   * Marked attendance across a range, for the reports screen. Every filter is
+   * optional, so the same call serves "everyone, all time" and "one student
+   * between two dates". The size is deliberately large: a report is exported as
+   * one sheet, and paging it would silently truncate the file.
+   */
+  listAttendance(
+    filters: {
+      fromDate?: string;
+      toDate?: string;
+      studentId?: number;
+      sectionId?: number;
+      status?: AttendanceStatus;
+    } = {},
+  ): Observable<AttendanceRecord[]> {
+    return this.http
+      .get<ApiEnvelope<AttendancePage>>(`${API_BASE_URL}/attendance`, {
+        params: params({ ...filters, page: 0, size: 2000 }),
+      })
+      .pipe(pluckData(), map((page) => page?.content ?? []));
+  }
+
   // ── Fees ──────────────────────────────────────────────────────────────────
   listFees(
     filters: {
@@ -116,12 +140,19 @@ export class DataService {
       period?: string;
       billedMonth?: string;
       sectionId?: number;
+      studentId?: number;
       paid?: boolean;
       search?: string;
+      /** Brackets `paidDate`, so these select money collected, not money billed. */
+      fromDate?: string;
+      toDate?: string;
+      size?: number;
     } = {},
   ): Observable<FeePage> {
     return this.http
-      .get<ApiEnvelope<FeePage>>(`${API_BASE_URL}/fees`, { params: params({ ...filters, size: 100 }) })
+      .get<ApiEnvelope<FeePage>>(`${API_BASE_URL}/fees`, {
+        params: params({ size: 100, ...filters }),
+      })
       .pipe(pluckData());
   }
 
