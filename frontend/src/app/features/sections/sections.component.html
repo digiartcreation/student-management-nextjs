@@ -38,7 +38,7 @@
 </div>
 
 @if (showForm()) {
-  <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4" (click)="close()">
+  <div class="app-modal fixed inset-0 flex items-center justify-center bg-black/45 p-4" (click)="close()">
     <div class="w-full max-w-[360px] rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
         <h3 class="m-0 text-base font-bold text-gray-900">{{ editing() ? 'Edit Section' : 'Add Section' }}</h3>

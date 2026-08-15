@@ -55,7 +55,7 @@
 
 <!-- ── Add / Edit ────────────────────────────────────────── -->
 @if (showForm()) {
-  <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4" (click)="close()">
+  <div class="app-modal fixed inset-0 flex items-center justify-center bg-black/45 p-4" (click)="close()">
     <div class="w-full max-w-[720px] rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
       <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
         <h3 class="m-0 text-base font-bold text-gray-900">{{ editing() ? 'Edit Student' : 'Add Student' }}</h3>
@@ -93,7 +93,8 @@
             <div class="flex flex-col gap-1">
               <label class="text-xs font-semibold text-gray-600">Blood Group *</label>
               <ng-select [items]="bloodGroups" placeholder="Select blood group" [class.is-invalid]="errors()['bloodGroup']"
-                [(ngModel)]="form.bloodGroup" (ngModelChange)="revalidate()"></ng-select>
+                [ngModel]="form.bloodGroup || null"
+                (ngModelChange)="form.bloodGroup = $event ?? ''; revalidate()"></ng-select>
               @if (errors()['bloodGroup']) { <span class="text-[11px] font-semibold text-rose-600">{{ errors()['bloodGroup'] }}</span> }
             </div>
             <div class="flex flex-col gap-1">

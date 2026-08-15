@@ -128,7 +128,7 @@
 
 <!-- Sign Out Confirm Modal -->
 @if (showLogoutConfirm()) {
-  <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 p-4" (click)="cancelLogout()">
+  <div class="app-modal fixed inset-0 flex items-center justify-center bg-black/45 p-4" (click)="cancelLogout()">
     <div class="flex w-full max-w-[380px] flex-col items-center px-6 pt-7 pb-6 text-center rounded-2xl bg-white shadow-[0_20px_60px_rgba(0,0,0,0.2)]" (click)="$event.stopPropagation()">
       <div class="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
         <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

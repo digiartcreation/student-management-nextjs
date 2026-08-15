@@ -89,19 +89,17 @@ export class FeesComponent implements OnInit {
   gridOptions: GridOptions = { ...baseGridOptions, domLayout: 'autoHeight' };
 
   columnDefs: ColDef<Fee>[] = [
-    { headerName: 'Roll No', field: 'student.rollNo', width: 110, flex: 0 },
-    { headerName: 'Student', field: 'student.name', minWidth: 150, flex: 1 },
+    { headerName: 'Roll No', field: 'student.rollNo', width: 110 },
+    { headerName: 'Student', field: 'student.name', minWidth: 150 },
     {
       headerName: 'Class-Sec',
       width: 120,
-      flex: 0,
       valueGetter: (params) => this.data.sectionLabel(params.data?.student?.section),
     },
     {
       headerName: 'Type',
       field: 'feeType',
       width: 120,
-      flex: 0,
       valueFormatter: (params) => FEE_TYPE_LABELS[params.value as FeeType] ?? '',
     },
     {
@@ -114,7 +112,6 @@ export class FeesComponent implements OnInit {
       headerName: 'Amount',
       field: 'amount',
       width: 130,
-      flex: 0,
       type: 'rightAligned',
       // Edited in place rather than through a separate row-edit mode: ag-grid
       // already provides the editor, and onCellValueChanged persists it.
@@ -126,7 +123,6 @@ export class FeesComponent implements OnInit {
       headerName: 'Status',
       field: 'paid',
       width: 110,
-      flex: 0,
       valueFormatter: (params) => (params.value ? 'Paid' : 'Unpaid'),
       cellRenderer: (params: ICellRendererParams<Fee>) => {
         const paid = Boolean(params.value);
@@ -140,14 +136,12 @@ export class FeesComponent implements OnInit {
       headerName: 'Paid On',
       field: 'paidDate',
       width: 130,
-      flex: 0,
       valueFormatter: (params) =>
         params.value ? (this.dates.transform(params.value, 'dd MMM yyyy') ?? '') : '—',
     },
     {
       headerName: 'Actions',
       width: 220,
-      flex: 0,
       sortable: false,
       filter: false,
       pinned: 'right',

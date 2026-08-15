@@ -129,13 +129,15 @@ export class ReportsComponent implements OnInit {
     { value: 'false', label: 'Unpaid' },
   ];
 
+  // No flex: columns size to their content so no header or value is clipped.
   defaultColDef: ColDef = {
     sortable: true,
     filter: true,
     resizable: true,
     minWidth: 110,
-    flex: 1,
   };
+
+  autoSizeStrategy = { type: 'fitCellContents' as const };
 
   readonly kinds: Array<{ value: ReportKind; label: string; hint: string }> = [
     { value: 'attendance', label: 'Attendance', hint: 'Every marked day, filtered any way you like' },

@@ -86,7 +86,7 @@ export async function saveAttendance(
 export async function getAttendance(id: number) {
   const attendance = await prisma.attendance.findUnique({
     where: { id },
-    include: { student: { include: { section: true } } },
+    include: { student: { include: { section: { include: { class: true } } } } },
   });
   if (!attendance) throw new NotFoundError("Attendance record not found");
   return attendance;
@@ -100,7 +100,7 @@ export async function updateAttendance(
   return prisma.attendance.update({
     where: { id },
     data: { status: data.status, remarks: data.remarks ?? null },
-    include: { student: { include: { section: true } } },
+    include: { student: { include: { section: { include: { class: true } } } } },
   });
 }
 
@@ -135,7 +135,7 @@ export async function listAttendance(filters: {
   const [content, totalElements] = await prisma.$transaction([
     prisma.attendance.findMany({
       where,
-      include: { student: { include: { section: true } } },
+      include: { student: { include: { section: { include: { class: true } } } } },
       skip: filters.skip,
       take: filters.size,
       orderBy: [{ date: "desc" }, { id: "desc" }],

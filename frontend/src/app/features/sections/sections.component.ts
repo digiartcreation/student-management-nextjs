@@ -32,28 +32,24 @@ export class SectionsComponent implements OnInit {
     {
       headerName: 'Class',
       width: 110,
-      flex: 0,
       valueGetter: (params) => params.data?.class?.name ?? '',
     },
-    { headerName: 'Section', field: 'name', width: 120, flex: 0 },
+    { headerName: 'Section', field: 'name', width: 120 },
     {
       headerName: 'Full name',
-      flex: 1,
       minWidth: 130,
       valueGetter: (params) => (params.data ? this.data.sectionLabel(params.data) : ''),
     },
-    { headerName: 'Students', field: 'studentCount', width: 120, flex: 0 },
+    { headerName: 'Students', field: 'studentCount', width: 120 },
     {
       headerName: 'Status',
       field: 'status',
       width: 120,
-      flex: 0,
       cellRenderer: (params: ICellRendererParams<Section>) => statusBadge(String(params.value)),
     },
     {
       headerName: 'Actions',
       width: 150,
-      flex: 0,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams<Section>) => {

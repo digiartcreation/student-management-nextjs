@@ -40,10 +40,9 @@ export class ClassesComponent implements OnInit {
   gridOptions: GridOptions = { ...baseGridOptions, domLayout: 'autoHeight' };
 
   columnDefs: ColDef<ClassGroup>[] = [
-    { headerName: 'Class', field: 'name', flex: 1, minWidth: 120 },
+    { headerName: 'Class', field: 'name', minWidth: 120 },
     {
       headerName: 'Sections',
-      flex: 2,
       minWidth: 200,
       sortable: false,
       filter: false,
@@ -61,19 +60,17 @@ export class ClassesComponent implements OnInit {
           .join('');
       },
     },
-    { headerName: 'Section count', field: 'sectionCount', width: 130, flex: 0 },
-    { headerName: 'Students', field: 'studentCount', width: 110, flex: 0 },
+    { headerName: 'Section count', field: 'sectionCount', width: 130 },
+    { headerName: 'Students', field: 'studentCount', width: 110 },
     {
       headerName: 'Status',
       field: 'status',
       width: 120,
-      flex: 0,
       cellRenderer: (params: ICellRendererParams<ClassGroup>) => statusBadge(String(params.value)),
     },
     {
       headerName: 'Actions',
       width: 150,
-      flex: 0,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams<ClassGroup>) => {

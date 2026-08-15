@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import { RouterLink } from '@angular/router';
 import {
   ApexAxisChartSeries,
@@ -99,7 +100,7 @@ interface Card {
 @Component({
   selector: 'app-student-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NgApexchartsModule],
+  imports: [CommonModule, FormsModule, RouterLink, NgApexchartsModule, NgSelectModule],
   templateUrl: './student-dashboard.component.html',
 })
 export class StudentDashboardComponent implements OnInit {

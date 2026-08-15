@@ -34,8 +34,9 @@ export const defaultColDef: ColDef = {
   sortable: true,
   filter: true,
   resizable: true,
-  minWidth: 110,
-  flex: 1,
+  // No `flex` here on purpose. Flex divides the available width between
+  // columns, which is what was clipping headers like "Billed Month" down to
+  // "Billed …". Width is decided by content instead — see autoSizeStrategy.
 };
 
 /**
@@ -51,6 +52,16 @@ export const baseGridOptions: GridOptions = {
   paginationPageSizeSelector: [10, 25, 50, 100],
   // Actions columns hold buttons; a text cursor over them reads as editable.
   suppressCellFocus: true,
+
+  /**
+   * Size every column to the widest of its header and its cells, then stretch
+   * to fill if that leaves the grid narrower than its container.
+   *
+   * `fitCellContents` is what guarantees nothing is truncated; the trade-off is
+   * that a wide table scrolls horizontally rather than squeezing, which is the
+   * right way round for data a user needs to read in full.
+   */
+  autoSizeStrategy: { type: 'fitCellContents' },
 };
 
 /** Renders a coloured pill, matching the status badges used elsewhere. */

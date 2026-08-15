@@ -78,5 +78,19 @@
 /* Turns red when the field it wraps has failed validation. */
 .ng-select.is-invalid > .ng-select-container { border-color: #fb7185; }
 
+/* ── Stacking ───────────────────────────────────────────────────────────────
+   ng-select ships a z-index of 1050 on the control itself, which is far above
+   the dialogs (z-100). The filter bar behind an open modal therefore painted
+   straight through it. The control is dropped back into normal flow and only
+   lifted while it is actually open; dialogs then sit above both. An ng-select
+   inside a dialog still renders correctly because it shares that dialog's
+   stacking context rather than competing with it. */
+.ng-select { z-index: auto; }
+.ng-select.ng-select-opened,
+.ng-select.ng-select-focused { z-index: 1050; }
+.ng-dropdown-panel { z-index: 1060; }
+/* Every modal overlay in the app. */
+.app-modal { z-index: 2000; }
+
 /* ag-grid: let the action buttons inside a cell look clickable. */
 .ag-theme-quartz .ag-cell button, .ag-cell button { cursor: pointer; }

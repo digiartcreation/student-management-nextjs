@@ -44,13 +44,12 @@ export class AttendanceComponent implements OnInit {
   };
 
   columnDefs: ColDef<RosterRow>[] = [
-    { headerName: 'Roll No', field: 'rollNo', width: 110, flex: 0 },
-    { headerName: 'Student', field: 'name', minWidth: 160, flex: 1 },
-    { headerName: 'Class-Sec', field: 'sectionName', width: 120, flex: 0 },
+    { headerName: 'Roll No', field: 'rollNo', width: 110 },
+    { headerName: 'Student', field: 'name', minWidth: 160 },
+    { headerName: 'Class-Sec', field: 'sectionName', width: 120 },
     {
       headerName: 'Mark',
       width: 170,
-      flex: 0,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams<RosterRow>) => {
@@ -65,7 +64,9 @@ export class AttendanceComponent implements OnInit {
           const button = document.createElement('button');
           const active = params.data?.status === status;
           button.textContent = letter;
-          button.style.cssText = `border:1px solid ${colour};border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;background:${
+          // Fixed box rather than padding alone: without an explicit height the
+          // buttons stretched to fill the row and read as blocks, not controls.
+          button.style.cssText = `border:1px solid ${colour};border-radius:6px;width:30px;height:26px;line-height:1;padding:0;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;background:${
             active ? colour : '#fff'
           };color:${active ? '#fff' : colour}`;
           button.addEventListener('click', () => {
@@ -82,7 +83,6 @@ export class AttendanceComponent implements OnInit {
       headerName: 'Status',
       field: 'status',
       width: 130,
-      flex: 0,
       cellRenderer: (params: ICellRendererParams<RosterRow>) => {
         const value = String(params.value);
         const styles: Record<string, string> = {
@@ -99,7 +99,6 @@ export class AttendanceComponent implements OnInit {
       headerName: 'Remarks',
       field: 'remarks',
       minWidth: 180,
-      flex: 1,
       editable: true,
       sortable: false,
       filter: false,
@@ -107,7 +106,6 @@ export class AttendanceComponent implements OnInit {
     {
       headerName: 'Clear',
       width: 90,
-      flex: 0,
       sortable: false,
       filter: false,
       cellRenderer: (params: ICellRendererParams<RosterRow>) => {

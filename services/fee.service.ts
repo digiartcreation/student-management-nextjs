@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { BusinessError, ConflictError, NotFoundError } from "@/lib/errors";
 import { billedMonthOf, feeLabel } from "@/utils/fee";
 
-const feeInclude = { student: { include: { section: true } } } satisfies Prisma.FeeInclude;
+const feeInclude = {
+  student: { include: { section: { include: { class: true } } } },
+} satisfies Prisma.FeeInclude;
 
 /** Sums a Decimal column, returning a plain fixed-point string. */
 const sum = (rows: Array<{ amount: Prisma.Decimal }>) =>

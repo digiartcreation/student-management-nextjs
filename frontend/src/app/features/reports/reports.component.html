@@ -54,7 +54,7 @@
     @if (showFeeMode()) {
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold text-gray-500">Period</span>
-        <ng-select class="w-40" [items]="feeModes" bindLabel="label" bindValue="value" [clearable]="false"
+        <ng-select class="w-40" [items]="feeModes" bindLabel="label" bindValue="value" [clearable]="false" placeholder="Monthly"
           [ngModel]="feeMode() || null" (ngModelChange)="feeMode.set($event ?? '')"></ng-select>
       </label>
     }
@@ -82,7 +82,7 @@
     @if (showStatus()) {
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold text-gray-500">Status</span>
-        <ng-select class="w-40" [items]="statusOptions" bindLabel="label" bindValue="value" [clearable]="false"
+        <ng-select class="w-40" [items]="statusOptions" bindLabel="label" bindValue="value" [clearable]="false" placeholder="All statuses"
           [ngModel]="status() || null" (ngModelChange)="status.set($event ?? '')"></ng-select>
       </label>
     }
@@ -90,7 +90,7 @@
     @if (showPaid()) {
       <label class="flex flex-col gap-1">
         <span class="text-xs font-semibold text-gray-500">Payment</span>
-        <ng-select class="w-36" [items]="paidOptions" bindLabel="label" bindValue="value" [clearable]="false"
+        <ng-select class="w-36" [items]="paidOptions" bindLabel="label" bindValue="value" [clearable]="false" placeholder="All"
           [ngModel]="paid() || null" (ngModelChange)="paid.set($event ?? '')"></ng-select>
       </label>
     }
@@ -160,6 +160,7 @@
         [rowData]="rows()"
         [columnDefs]="columnDefs()"
         [defaultColDef]="defaultColDef"
+        [autoSizeStrategy]="autoSizeStrategy"
         [pagination]="true"
         [paginationPageSize]="50"
         [paginationPageSizeSelector]="[25, 50, 100, 200]"

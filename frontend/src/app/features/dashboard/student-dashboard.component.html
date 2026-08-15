@@ -68,14 +68,9 @@
           <input type="text" placeholder="Search name or roll no"
             class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
             [ngModel]="pickerSearch()" (ngModelChange)="pickerSearch.set($event)"/>
-          <select
-            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm outline-none focus:border-indigo-500 focus:bg-white"
-            [ngModel]="sectionFilter()" (ngModelChange)="sectionFilter.set($event)">
-            <option [ngValue]="''">All sections</option>
-            @for (section of sections(); track section.id) {
-              <option [ngValue]="section.id">{{ section.name }}</option>
-            }
-          </select>
+          <ng-select [items]="sections()" bindLabel="label" bindValue="id" placeholder="All sections"
+            [ngModel]="sectionFilter() || null" (ngModelChange)="sectionFilter.set($event ?? '')">
+          </ng-select>
           <span class="text-[11px] text-gray-400">
             {{ selectedIds().length }} of {{ maxStudents }} picked — each one gets its own dashboard below
           </span>
@@ -91,7 +86,7 @@
                 (change)="toggle(student.id)"/>
               <span class="font-mono text-[11px] text-gray-500">{{ student.rollNo }}</span>
               <span class="flex-1 truncate text-sm font-semibold text-gray-800">{{ student.name }}</span>
-              <span class="text-[11px] text-gray-400">{{ student.section?.name }}</span>
+              <span class="text-[11px] text-gray-400">{{ student.section?.label || student.section?.name }}</span>
             </label>
           } @empty {
             <div class="px-3 py-8 text-center text-sm font-semibold text-gray-400">No students match</div>

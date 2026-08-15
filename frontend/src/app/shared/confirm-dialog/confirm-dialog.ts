@@ -10,7 +10,7 @@ import { Component, input, output } from '@angular/core';
   selector: 'app-confirm-dialog',
   standalone: true,
   template: `
-    <div class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/45 p-4" (click)="cancel.emit()">
+    <div class="app-modal fixed inset-0 flex items-center justify-center bg-black/45 p-4" (click)="cancel.emit()">
       <div
         class="flex w-full max-w-[400px] flex-col items-center rounded-2xl bg-white px-6 pt-7 pb-6 text-center shadow-[0_20px_60px_rgba(0,0,0,0.2)]"
         (click)="$event.stopPropagation()">
