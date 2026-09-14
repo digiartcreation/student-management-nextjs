@@ -59,7 +59,7 @@
   box-shadow: none;
 }
 .ng-select .ng-select-container .ng-value-container .ng-placeholder { color: #9ca3af; }
-.ng-select .ng-dropdown-panel {
+.ng-dropdown-panel {
   border-radius: 0.5rem;
   border-color: #e5e7eb;
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.10);
@@ -78,22 +78,31 @@
 /* Turns red when the field it wraps has failed validation. */
 .ng-select.is-invalid > .ng-select-container { border-color: #fb7185; }
 
-/* ── Stacking ───────────────────────────────────────────────────────────────
-   ng-select ships a z-index of 1050 on the control itself, which is far above
-   the dialogs (z-100). The filter bar behind an open modal therefore painted
-   straight through it. The control is dropped back into normal flow and only
-   lifted while it is actually open; dialogs then sit above both. An ng-select
-   inside a dialog still renders correctly because it shares that dialog's
-   stacking context rather than competing with it. */
-/* One scale for the whole app, so nothing is decided by a stray number:
-     ng-select (open) 1050 · its panel 1060 · mobile menu button 1100
-     sidebar backdrop 1200 · sidebar 1300 · dialogs 2000 · toasts 2500
-   Anything below 1050 loses to an open dropdown, which is what put the filter
-   bar on top of the sidebar and the dialogs on a phone. */
-.ng-select { z-index: auto; }
+/* ── Stacking ───────────────────────────────────────────────
+   A dropdown inside a dialog cannot be solved with z-index alone, so the
+   selects in a dialog carry appendTo="body" and the panel is reparented out
+   of the dialog. Two reasons it has to leave:
+     · the dialog body is overflow-y-auto, which clips an absolutely
+       positioned panel to the scroll box;
+     · the form is a two-column grid, so Blood Group, Section and Status sit
+       in one column on consecutive rows and the open panel runs straight down
+       over the two fields below it.
+   Reparented, the panel is a child of <body>, so it has to clear the dialog
+   rather than sit inside it — hence the 2100 below.
+
+   One scale for the whole app, so nothing is decided by a stray number:
+     inline panel 1060 · mobile menu button 1100 · sidebar backdrop 1200
+     sidebar 1300 · dialogs 2000 · body-appended panel 2100 · toasts 2500
+   An inline panel (the filter bars) stays below the menu button and sidebar on
+   purpose, so an open dropdown cannot cover the navigation on a phone.
+   Never put a z-index on .ng-select itself: that makes the control a stacking
+   context and traps its own panel inside it. */
+.ng-select,
 .ng-select.ng-select-opened,
-.ng-select.ng-select-focused { z-index: 1050; }
+.ng-select.ng-select-focused { z-index: auto; }
 .ng-dropdown-panel { z-index: 1060; }
+/* Reparented by appendTo="body" — must clear .app-modal. */
+body > .ng-dropdown-panel { z-index: 2100; }
 .app-menu-button { z-index: 1100; }
 .app-sidebar-backdrop { z-index: 1200; }
 .app-sidebar { z-index: 1300; }

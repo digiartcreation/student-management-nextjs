@@ -52,7 +52,7 @@
       <div class="flex flex-col gap-4 px-5 py-5">
         <div class="flex flex-col gap-1">
           <label class="text-xs font-semibold text-gray-600">Class *</label>
-          <ng-select [items]="classes()" bindLabel="name" bindValue="id" placeholder="Select class"
+          <ng-select appendTo="body" [items]="classes()" bindLabel="name" bindValue="id" placeholder="Select class"
             [class.is-invalid]="errors()['classId']"
             [(ngModel)]="form.classId" (ngModelChange)="revalidate()">
           </ng-select>
@@ -73,7 +73,7 @@
         @if (editing()) {
           <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold text-gray-600">Status</label>
-            <ng-select [items]="statuses" bindLabel="label" bindValue="value" [clearable]="false"
+            <ng-select appendTo="body" [items]="statuses" bindLabel="label" bindValue="value" [clearable]="false"
               [(ngModel)]="form.status">
             </ng-select>
           </div>
