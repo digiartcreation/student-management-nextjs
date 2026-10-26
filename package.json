@@ -18,12 +18,14 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed"
   },
-  "prisma": { "seed": "tsx prisma/seed.ts" },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^6.5.0",
     "bcryptjs": "^2.4.3",
     "jose": "^5.10.0",
-    "next": "^15.3.0",
+    "next": "^15.5.28",
     "pdfkit": "^0.16.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
